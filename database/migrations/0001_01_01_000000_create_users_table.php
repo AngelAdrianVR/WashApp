@@ -20,6 +20,10 @@ return new class extends Migration
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
+            // Rol del usuario para controlar permisos (cliente, empleado, admin)
+            $table->string('role')->default('client'); 
+            // Número de teléfono, útil para contacto
+            $table->string('phone_number')->nullable();
             $table->timestamps();
         });
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -29,6 +30,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role', // Rol del usuario (client, employee, admin)
+        'phone_number',
     ];
 
     /**
@@ -63,5 +66,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Obtiene las reservas hechas por el usuario como cliente.
+     */
+    public function bookingsAsClient(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'user_id');
+    }
+
+    /**
+     * Obtiene las reservas asignadas al usuario como empleado.
+     */
+    public function bookingsAsEmployee(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'employee_id');
+    }
+
+    /**
+     * Obtiene las recompensas ganadas por el usuario.
+     */
+    public function rewards(): HasMany
+    {
+        return $this->hasMany(UserReward::class);
     }
 }
