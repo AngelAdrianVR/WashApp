@@ -149,6 +149,7 @@ const confirmDelete = (user) => {
                  <!-- Vista de Tabla para pantallas grandes -->
                 <div class="hidden md:block">
                     <DataTable :value="users.data" @row-click="onRowClick" rowHover class="cursor-pointer" tableStyle="min-width: 50rem">
+                         <Column field="id" header="ID" sortable></Column>
                          <Column field="name" header="Nombre" sortable>
                             <template #body="slotProps">
                                 <div class="flex items-center gap-3">

@@ -51,19 +51,19 @@ const menuItems = computed(() => [
     {
         label: 'Reservas',
         icon: 'pi pi-bookmark-fill',
-        route: 'dashboard', // TODO: Cambia a la ruta admin, ej: 'admin.bookings.index'
+        route: 'admin.bookings.index', // TODO: Cambia a la ruta admin, ej: 'admin.bookings.index'
         visible: hasRole('Admin'),
     },
     {
         label: 'Servicios',
         icon: 'pi pi-car',
-        route: 'dashboard', // TODO: Cambia a la ruta admin, ej: 'admin.services.index'
+        route: 'admin.services.index', // TODO: Cambia a la ruta admin, ej: 'admin.services.index'
         visible: hasRole('Admin'),
     },
     {
         label: 'Promociones',
         icon: 'pi pi-tags',
-        route: 'dashboard', // TODO: Cambia a la ruta admin, ej: 'admin.promotions.index'
+        route: 'admin.promotions.index', // TODO: Cambia a la ruta admin, ej: 'admin.promotions.index'
         visible: hasRole('Admin'),
     },
     {
