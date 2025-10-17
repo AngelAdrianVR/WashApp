@@ -134,18 +134,28 @@ onUnmounted(() => {
         <div class="container mx-auto px-6 py-8">
             <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
                 <div class="flex items-center space-x-2 text-xl font-bold text-white mb-4 md:mb-0">
-                    <img src="/images/isologo.png" alt="WashApp Footer Logo" class="h-7 w-auto">
+                    <img src="/images/isologo.png" alt="WashApp Footer Logo" class="h-12 w-auto">
                     <p>Wash<span class="text-cyan-400">App</span></p>
                 </div>
-                <p class="text-slate-400 text-sm">
-                    &copy; {{ new Date().getFullYear() }} WashApp. Todos los derechos reservados.
-                </p>
-                 <div class="flex space-x-4 mt-4 md:mt-0">
+                 <!-- <div class="flex space-x-4 mt-4 md:mt-0">
                     <a href="#" aria-label="Facebook" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg></a>
                     <a href="#" aria-label="Twitter" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.71v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" /></svg></a>
                     <a href="#" aria-label="Instagram" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.013-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 016.345 4.52c.636-.247 1.363-.416 2.427-.465C9.793 4.013 10.147 4 12.573 4h-.01a12.04 12.04 0 01-.248 0zm0 1.442c-2.376 0-2.71.01-3.654.052-1.002.046-1.57.2-2.02.385a3.48 3.48 0 00-1.24 1.24c-.184.45-.338 1.018-.385 2.02-.043.944-.052 1.278-.052 3.654s.01 2.71.052 3.654c.046 1.002.2 1.57.385 2.02a3.48 3.48 0 001.24 1.24c.45.184 1.018.338 2.02.385.944.043 1.278.052 3.654.052s2.71-.01 3.654-.052c1.002-.046 1.57-.2 2.02-.385a3.48 3.48 0 001.24-1.24c.184-.45.338-1.018.385-2.02.043-.944.052-1.278.052-3.654s-.01-2.71-.052-3.654c-.046-1.002-.2-1.57-.385-2.02a3.48 3.48 0 00-1.24-1.24c-.45-.184-1.018-.338-2.02-.385C15.283 3.452 14.95 3.442 12.573 3.442h.001zm0 2.923a4.634 4.634 0 100 9.268 4.634 4.634 0 000-9.268zm0 7.822a3.188 3.188 0 110-6.376 3.188 3.188 0 010 6.376z" clip-rule="evenodd" /></svg></a>
-                 </div>
+                 </div> -->
+                <!-- Creditos DTW -->
+                <div>
+                    <figure class="cursor-pointer">
+                        <a class="flex justify-end items-center" href="https://dtw.com.mx/" target="_blank">
+                            <p class="text-white text-xl">BY</p>
+                            <img class="w-20 lg:w-[5%]" src="@/../../public/images/DTW_logo_blanco.png" alt="">
+                        </a>
+                    </figure>
+                </div>
+
             </div>
+            <p class="text-slate-400 text-sm text-center mt-2">
+                &copy; {{ new Date().getFullYear() }} WashApp. Todos los derechos reservados.
+            </p>
         </div>
     </footer>
     <!-- =========== Footer ENDS =========== -->

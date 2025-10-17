@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('role')->default('client'); 
             // Número de teléfono, útil para contacto
             $table->string('phone_number')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 

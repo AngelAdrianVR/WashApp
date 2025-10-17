@@ -1,7 +1,54 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
 import { Link } from '@inertiajs/vue3';
+
+// Se ejecuta después de que el componente se ha montado en el DOM.
+onMounted(() => {
+  // --- Lógica para crear el fondo de burbujas animadas ---
+  const bubbleContainer = document.querySelector('.bubbles-container');
+  if (bubbleContainer) {
+    const numberOfBubbles = 25; // Cantidad de burbujas
+    for (let i = 0; i < numberOfBubbles; i++) {
+      const bubble = document.createElement('span');
+      // Usamos una clase genérica para la animación y una específica para el estilo
+      bubble.className = 'bubble'; 
+      
+      // Estilos aleatorios para cada burbuja
+      const size = Math.random() * 80 + 10 + 'px'; // Tamaño entre 10px y 60px
+      const animationDuration = Math.random() * 9 + 7 + 's'; // Duración entre 8s y 18s
+      // Se reduce el retraso para que aparezcan casi de inmediato.
+      const animationDelay = Math.random() * 2 + 's'; // Retraso entre 0s y 2s
+
+      bubble.style.width = size;
+      bubble.style.height = size;
+      bubble.style.left = Math.random() * 100 + '%'; // Posición horizontal aleatoria
+      bubble.style.animationDuration = animationDuration;
+      bubble.style.animationDelay = animationDelay;
+      
+      bubbleContainer.appendChild(bubble);
+    }
+  }
+
+  // --- Lógica para las transiciones al hacer scroll ---
+  // Se crea un observador que vigila cuándo los elementos entran en la pantalla.
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      // Si el elemento es visible, se le añade una clase para activar la animación.
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-visible');
+        observer.unobserve(entry.target); // Se deja de observar una vez animado para mejor rendimiento.
+      }
+    });
+  }, {
+    threshold: 0.1 // La animación se dispara cuando el 10% del elemento es visible.
+  });
+
+  // Se seleccionan todos los elementos que queremos animar.
+  const elementsToAnimate = document.querySelectorAll('[data-scroll-fade]');
+  elementsToAnimate.forEach(el => observer.observe(el));
+});
+
 
 // Lista de servicios actualizada y más detallada
 const services = ref([
@@ -34,7 +81,7 @@ const whyChooseUs = ref([
         description: 'No más filas ni esperas. Nos adaptamos a tu horario y vamos a donde estés: tu casa, tu oficina o donde nos necesites.'
     },
     {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.354l-6.364-6.364a9 9 0 1112.728 0L12 18.354z" clip-rule="evenodd" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.354l-6.364-6.364a9 9 0 1112.728 0L12 18.354z" /></svg>`,
+        icon: `<i class="fa-solid text-3xl fa-tree"></i>`,
         title: 'Productos Eco-Amigables',
         description: 'Usamos solo productos biodegradables de alta gama que son seguros para tu auto, para ti y para el medio ambiente.'
     },
@@ -48,17 +95,17 @@ const whyChooseUs = ref([
 // Beneficios para miembros
 const memberBenefits = ref([
     {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 16v-4" /></svg>`,
+        icon: `<i class="fa-solid fa-percent text-3xl"></i>`,
         title: 'Descuentos Exclusivos',
         description: 'Accede a precios especiales y ofertas que no encontrarás en ningún otro lado, solo por ser parte de la comunidad WashApp.'
     },
     {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`,
+        icon: `<i class="fa-solid fa-circle-dollar-to-slot text-3xl"></i>`,
         title: 'Servicios Gratis',
         description: 'Acumula puntos con cada lavado y canjéalos por servicios gratuitos, como encerado express o limpieza de tapetes.'
     },
     {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v1h2a2 2 0 012 2v10a2 2 0 01-2 2h-2v-1a2 2 0 00-2-2H9a2 2 0 00-2 2v1H5a2 2 0 01-2-2V8a2 2 0 012-2h2V5z" /></svg>`,
+        icon: `<i class="fa-solid fa-gift text-3xl"></i>`,
         title: 'Regalo de Cumpleaños',
         description: 'Celebramos contigo. Recibe un lavado básico completamente gratis durante el mes de tu cumpleaños.'
     }
@@ -70,23 +117,26 @@ const memberBenefits = ref([
         <main class="bg-slate-50 text-gray-800">
             <!-- =========== Hero Section STARTS =========== -->
             <section id="inicio" class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+                <!-- Contenedor de burbujas -->
+                <div class="bubbles-container" style="z-index: 999;" aria-hidden="true"></div>
+
                  <!-- Fondo de olas -->
-                <div class="absolute inset-0 z-0 opacity-40">
+                <div class="absolute inset-0 z-0 opacity-50">
                     <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-white to-transparent"></div>
                     <svg class="w-full h-auto absolute bottom-0 left-0" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="#e0f2fe" fill-opacity="1" d="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,202.7C672,224,768,224,864,197.3C960,171,1056,117,1152,106.7C1248,96,1344,128,1392,144L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
                     <svg class="w-full h-auto absolute bottom-0 left-0" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="#bae6fd" fill-opacity="0.5" d="M0,256L48,240C96,224,192,192,288,176C384,160,480,160,576,181.3C672,203,768,245,864,250.7C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
                 </div>
                 <div class="container mx-auto px-6 text-center relative z-10">
-                    <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-800 leading-tight mb-4">
+                    <h1 data-scroll-fade class="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-800 leading-tight mb-4">
                         El Cuidado Premium que tu Auto
                         <span class="block bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400">
                             Merece y Agradece.
                         </span>
                     </h1>
-                    <p class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8">
+                    <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8">
                         Experimenta la máxima conveniencia con nuestro servicio de lavado de autos a domicilio. Calidad, ecología y el mejor trato, todo en la puerta de tu casa.
                     </p>
-                    <a href="#agendar" class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
+                    <a data-scroll-fade :style="{'transition-delay': '300ms'}" href="#agendar" class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
                         Agendar Mi Lavado Ahora
                     </a>
                 </div>
@@ -97,14 +147,17 @@ const memberBenefits = ref([
             <section id="servicios" class="py-20 lg:py-32 bg-sky-50">
                 <div class="container mx-auto px-6">
                     <div class="text-center mb-16">
-                         <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Un Servicio para Cada Necesidad</h2>
-                        <p class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                         <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Un Servicio para Cada Necesidad</h2>
+                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
                            Desde una limpieza ecológica rápida hasta un detallado profundo. Tenemos el plan perfecto para que tu auto luzca impecable.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div v-for="(service, index) in services" :key="index" class="glass-card bg-white rounded-xl p-6 flex flex-col items-center text-center transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300">
+                        <div v-for="(service, index) in services" :key="index" 
+                             data-scroll-fade 
+                             :style="{ 'transition-delay': `${index * 100}ms` }"
+                             class="glass-card bg-white rounded-xl p-6 flex flex-col items-center text-center transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300">
                             <div class="text-blue-500 mb-4" v-html="service.icon"></div>
                             <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ service.title }}</h3>
                             <p class="text-slate-600 text-sm">{{ service.description }}</p>
@@ -118,13 +171,16 @@ const memberBenefits = ref([
             <section id="por-que-elegirnos" class="py-20 lg:py-32">
                 <div class="container mx-auto px-6">
                     <div class="text-center mb-16">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-800">La Diferencia está en los Detalles</h2>
-                        <p class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">La Diferencia está en los Detalles</h2>
+                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
                             No solo lavamos autos, los cuidamos. Descubre por qué nuestros clientes nos prefieren.
                         </p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                        <div v-for="(feature, index) in whyChooseUs" :key="index" class="flex flex-col items-center">
+                        <div v-for="(feature, index) in whyChooseUs" :key="index" 
+                             data-scroll-fade 
+                             :style="{ 'transition-delay': `${index * 150}ms` }"
+                             class="flex flex-col items-center">
                             <div class="flex items-center justify-center h-16 w-16 rounded-full bg-cyan-100 text-cyan-500 mb-4" v-html="feature.icon"></div>
                             <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ feature.title }}</h3>
                             <p class="text-slate-600">{{ feature.description }}</p>
@@ -138,8 +194,8 @@ const memberBenefits = ref([
             <section id="testimonios" class="py-20 lg:py-32 bg-sky-50">
                 <div class="container mx-auto px-6 text-center">
                     <div class="max-w-3xl mx-auto">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-800 mb-8">Lo que dicen nuestros clientes</h2>
-                        <div class="glass-card bg-white rounded-xl p-8 shadow-lg">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800 mb-8">Lo que dicen nuestros clientes</h2>
+                        <div data-scroll-fade :style="{'transition-delay': '150ms'}" class="glass-card bg-white rounded-xl p-8 shadow-lg">
                             <p class="text-slate-600 text-lg italic mb-6">"El servicio fue increíble. Llegaron puntuales, fueron súper profesionales y mi auto quedó más limpio que cuando lo saqué de la agencia. ¡Totalmente recomendado!"</p>
                             <p class="font-bold text-slate-800">- Ana L., Zapopan</p>
                             <div class="flex justify-center mt-4 text-yellow-400">
@@ -155,20 +211,25 @@ const memberBenefits = ref([
             <section id="beneficios" class="py-20 lg:py-32">
                 <div class="container mx-auto px-6">
                     <div class="text-center mb-16">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Beneficios Exclusivos al Registrarte</h2>
-                        <p class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Beneficios Exclusivos al Registrarte</h2>
+                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
                             Crear una cuenta es gratis y te da acceso a un mundo de ventajas pensadas para ti y tu auto.
                         </p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                        <div v-for="(benefit, index) in memberBenefits" :key="index" class="flex flex-col items-center">
+                        <div v-for="(benefit, index) in memberBenefits" :key="index" 
+                             data-scroll-fade 
+                             :style="{ 'transition-delay': `${index * 150}ms` }"
+                             class="flex flex-col items-center">
                             <div class="flex items-center justify-center h-16 w-16 rounded-full bg-sky-100 text-sky-500 mb-4" v-html="benefit.icon"></div>
                             <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ benefit.title }}</h3>
                             <p class="text-slate-600">{{ benefit.description }}</p>
                         </div>
                     </div>
                     <div class="text-center mt-16">
-                        <Link :href="route('landing.promociones')" class="cta-button bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
+                        <Link :href="route('landing.promociones')" 
+                              data-scroll-fade 
+                              class="cta-button bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
                             Ver Todas las Promociones
                         </Link>
                     </div>
@@ -179,13 +240,16 @@ const memberBenefits = ref([
             <!-- =========== CTA Section STARTS =========== -->
             <section id="agendar" class="py-20 lg:py-32 bg-slate-800 text-white">
                 <div class="container mx-auto px-6 text-center">
-                    <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
+                    <h2 data-scroll-fade class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
                         ¿Listo para un Auto Reluciente sin Esfuerzo?
                     </h2>
-                    <p class="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
+                    <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
                        Dale a tu auto el cuidado que se merece con la comodidad que tú necesitas. Agenda en menos de 2 minutos.
                     </p>
-                    <Link :href="route('landing.agendar')" class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
+                    <Link :href="route('landing.agendar')" 
+                          data-scroll-fade 
+                          :style="{'transition-delay': '300ms'}"
+                          class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
                         Ver Planes y Agendar
                     </Link>
                 </div>
@@ -196,6 +260,59 @@ const memberBenefits = ref([
 </template>
 
 <style scoped>
+/* --- Estilos para la animación de burbujas --- */
+.bubbles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1; /* Colocado sobre el fondo (z-0) y debajo del texto (z-10) */
+    pointer-events: none; /* Evita que las burbujas interfieran con el clic */
+}
+
+/* CORRECCIÓN: 
+  Usamos el combinador :deep() para que los estilos de .bubble 
+  se apliquen también a los elementos hijos creados con JavaScript, 
+  ignorando el 'scoped' solo para esta regla.
+*/
+:deep(.bubble) {
+    position: absolute;
+    bottom: -100px; /* Empiezan desde abajo, fuera de la pantalla */
+    background-color: rgba(74, 138, 241, 0.301); 
+    border-radius: 50%;
+    animation-name: bubble-float;
+    animation-timing-function: ease-in;
+    animation-iteration-count: infinite;
+}
+
+@keyframes bubble-float {
+    0% {
+        transform: translateY(0);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(-120vh); /* Flotan hasta desaparecer por arriba */
+        opacity: 0;
+    }
+}
+
+
+/* --- Estilos para la animación de entrada al hacer scroll --- */
+[data-scroll-fade] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* --- Estilos existentes --- */
 .glass-card {
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
