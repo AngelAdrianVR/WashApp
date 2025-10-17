@@ -7,6 +7,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -29,8 +30,24 @@ Route::middleware([
     })->name('dashboard');
 });
 
+    // Lógica para despachar el dashboard segun el rol
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
 
-// --- Rutas para Administradores ---
+        if ($user->role === 'Admin') {
+            // En lugar de renderizar, podrías pasar un prop
+            // y que el componente Dashboard.vue decida qué mostrar.
+            // O renderizar directamente el componente del Admin.
+            return Inertia::render('Admin/Dashboard');
+        } elseif ($user->role === 'Empleado') {
+            return Inertia::render('Employee/Dashboard');
+        } else { // Cliente
+            return Inertia::render('Client/Dashboard');
+        }
+    })->name('dashboard');
+
+
+    // --- Rutas para Administradores ---
     Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(function () {
         // USUARIOS -----------------------------
         // --------------------------------------
@@ -86,8 +103,11 @@ Route::middleware([
         // El cliente solo puede ver su historial, ver una reserva, y cancelarla.
         // La creación se hace desde la ruta pública.
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+        Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('bookings/available-times', [BookingController::class, 'getAvailableTimes'])->name('bookings.availableTimes'); // Ruta para obtener horarios disponibles (vía API)
 
         // MIS RECOMPENSAS ----------------------
         // --------------------------------------
