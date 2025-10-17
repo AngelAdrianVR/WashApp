@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
 
-            // Relación con el cliente (si está logueado). Nulo para invitados.
+            // Relación con el cliente (si está logueado). Nulo para invitados o clientes no logueados.
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
 
             // Relación con el empleado asignado a la cita.
@@ -39,6 +39,7 @@ return new class extends Migration
             // Precio total calculado al momento de la reserva
             $table->decimal('total_price', 8, 2);
 
+            $table->text('cancel_reason')->nullable();
             // Notas adicionales del cliente o del empleado
             $table->text('notes')->nullable();
             

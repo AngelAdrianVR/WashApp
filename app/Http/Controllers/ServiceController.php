@@ -19,7 +19,7 @@ class ServiceController extends Controller
                       ->orWhere('description', 'like', "%{$search}%");
             })->latest()
             // Paginamos los resultados
-            ->paginate(10)
+            ->paginate(20)
             // Mantenemos los parámetros de la URL (como la búsqueda) en la paginación
             ->withQueryString()
             // Transformamos los datos para enviarlos a la vista

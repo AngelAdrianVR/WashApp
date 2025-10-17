@@ -8,12 +8,14 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 
 // Función para verificar si el usuario tiene un rol específico.
+// Asegúrate que los roles en tu base de datos coincidan con 'Cliente', 'Empleado', 'Admin'.
+// Si en tu base de datos están en minúsculas ('cliente'), deberías compararlos así:
+// return user.value?.role.toLowerCase() === role.toLowerCase();
 const hasRole = (role) => {
-    // Accedemos a la propiedad 'role' del objeto de usuario.
     return user.value?.role === role;
 };
 
-// Definición de los enlaces de navegación basados en roles.
+// Definición de los enlaces de navegación basados en roles con las rutas correctas.
 const menuItems = computed(() => [
     // --- Menú Común para todos ---
     {
@@ -26,20 +28,23 @@ const menuItems = computed(() => [
     {
         label: 'Agendar Cita',
         icon: 'pi pi-calendar-plus',
-        route: 'dashboard', // TODO: Cambia a tu ruta de agendar, ej: 'bookings.create'
+        // Esta es una ruta pública, ideal para que puedan agendar fácilmente.
+        route: 'client.bookings.create',
         visible: hasRole('Cliente'),
     },
     {
         label: 'Mis Reservas',
         icon: 'pi pi-book',
-        route: 'dashboard', // TODO: Cambia a tu ruta de reservas, ej: 'bookings.index'
+        // Ruta específica para que el cliente vea sus reservas.
+        route: 'client.bookings.index',
         visible: hasRole('Cliente'),
     },
     // --- Menú para Empleados y Administradores ---
     {
         label: 'Agenda del Día',
         icon: 'pi pi-calendar',
-        route: 'dashboard', // TODO: Cambia a la ruta de agenda, ej: 'employee.schedule'
+        // Ruta para que el empleado vea las reservas que tiene asignadas.
+        route: 'employee.bookings.index',
         visible: hasRole('Empleado') || hasRole('Admin'),
     },
     // --- Menú exclusivo para Administradores ---
@@ -49,27 +54,28 @@ const menuItems = computed(() => [
         visible: hasRole('Admin'),
     },
     {
-        label: 'Reservas',
+        label: 'Gestionar Reservas',
         icon: 'pi pi-bookmark-fill',
-        route: 'admin.bookings.index', // TODO: Cambia a la ruta admin, ej: 'admin.bookings.index'
+        // Ruta para que el admin gestione TODAS las reservas.
+        route: 'admin.bookings.index',
         visible: hasRole('Admin'),
     },
     {
-        label: 'Servicios',
+        label: 'Gestionar Servicios',
         icon: 'pi pi-car',
-        route: 'admin.services.index', // TODO: Cambia a la ruta admin, ej: 'admin.services.index'
+        route: 'admin.services.index',
         visible: hasRole('Admin'),
     },
     {
-        label: 'Promociones',
+        label: 'Gestionar Promociones',
         icon: 'pi pi-tags',
-        route: 'admin.promotions.index', // TODO: Cambia a la ruta admin, ej: 'admin.promotions.index'
+        route: 'admin.promotions.index',
         visible: hasRole('Admin'),
     },
     {
-        label: 'Usuarios',
+        label: 'Gestionar Usuarios',
         icon: 'pi pi-users',
-        route: 'admin.users.index', // TODO: Cambia a la ruta admin, ej: 'admin.users.index'
+        route: 'admin.users.index',
         visible: hasRole('Admin'),
     },
 ]);
