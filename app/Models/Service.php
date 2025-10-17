@@ -21,6 +21,10 @@ class Service extends Model implements HasMedia
         'is_active',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
+
     /**
      * Las reservas que incluyen este servicio.
      */
