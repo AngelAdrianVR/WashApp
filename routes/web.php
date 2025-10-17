@@ -9,6 +9,7 @@ use App\Http\Controllers\UserRewardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 // ruta principal que muestra la página de inicio ---------------------------------------------
 // --------------------------------------------------------------------------------------------
@@ -36,13 +37,18 @@ Route::middleware([
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleIsActive'])->name('users.toggleActive');
 
+
         // SERVICIOS ----------------------------
         // --------------------------------------
         Route::resource('services', ServiceController::class);
+        Route::patch('services/{service}/toggle-active', [ServiceController::class, 'toggleActive'])->name('services.toggleActive');
+        Route::post('services/{service}/add-images', [ServiceController::class, 'addImages'])->name('services.addImages'); // Ruta para agregar nuevas imágenes a un servicio
+
 
         // PROMOCIONES --------------------------
         // --------------------------------------
         Route::resource('promotions', PromotionController::class);
+
 
         // RESERVACIONES ------------------------
         // --------------------------------------
@@ -51,6 +57,7 @@ Route::middleware([
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
         // Ruta para asignar un empleado a una reserva.
         Route::patch('bookings/{booking}/assign', [BookingController::class, 'assignEmployee'])->name('bookings.assignEmployee');
+
 
         // RECOMPENSAS DE USUARIO ---------------
         // --------------------------------------
@@ -87,3 +94,12 @@ Route::middleware([
         // El cliente puede ver las recompensas/cupones que ha ganado.
         Route::get('rewards', [UserRewardController::class, 'index'])->name('rewards.index');
     });
+
+
+    // Ruta general para eliminar cualquier archivo de la librería de medios
+    Route::delete('media/{media}', function (Media $media) {
+        // Aquí podrías agregar políticas de seguridad para asegurar que el usuario
+        // tiene permiso para eliminar este archivo específico.
+        $media->delete();
+        return back();
+    })->middleware('auth')->name('media.destroy');
