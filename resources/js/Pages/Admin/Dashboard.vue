@@ -1,10 +1,21 @@
 <template>
-  dashboard de admin
+    <AppLayout title="Dashboard">
+      Admin
+    </AppLayout>
 </template>
 
 <script>
-export default {
+import AppLayout from '@/Layouts/AppLayout.vue';
 
+export default {
+data() {
+    return {
+
+    }
+},
+components:{
+    AppLayout,
+}
 }
 </script>
 
