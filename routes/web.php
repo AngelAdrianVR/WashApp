@@ -6,6 +6,7 @@ use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
+use App\Models\Booking;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -31,20 +32,63 @@ Route::middleware([
 });
 
     // Lógica para despachar el dashboard segun el rol
-    Route::get('/dashboard', function () {
-        $user = Auth::user();
+    Route::middleware([
+        'auth:sanctum',
+        config('jetstream.auth_session'),
+        'verified',
+    ])->group(function () {
+        Route::get('/dashboard', function () {
+            $user = Auth::user();
 
-        if ($user->role === 'Admin') {
-            // En lugar de renderizar, podrías pasar un prop
-            // y que el componente Dashboard.vue decida qué mostrar.
-            // O renderizar directamente el componente del Admin.
-            return Inertia::render('Admin/Dashboard');
-        } elseif ($user->role === 'Empleado') {
-            return Inertia::render('Employee/Dashboard');
-        } else { // Cliente
-            return Inertia::render('Client/Dashboard');
-        }
-    })->name('dashboard');
+            if ($user->role === 'Admin') {
+                // Logic and data for the Admin dashboard
+                return Inertia::render('Admin/Dashboard', [
+                    // Pass admin-specific data here
+                ]);
+            } 
+            
+            if ($user->role === 'Empleado') {
+                // Logic and data for the Employee dashboard
+                return Inertia::render('Employee/Dashboard', [
+                    // Pass employee-specific data here
+                ]);
+            } 
+            
+            // --- Client Dashboard Logic ---
+
+            // Query to get the next 5 upcoming (pending) bookings.
+            $upcomingBookings = Booking::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->where('scheduled_at', '>=', now())
+                ->with('services') // Eager load the services
+                ->orderBy('scheduled_at', 'asc')
+                ->limit(5)
+                ->get();
+            
+            // Query to get active bookings for the stepper.
+            $activeBookings = Booking::where('user_id', $user->id)
+                ->whereIn('status', ['confirmed', 'on_way', 'in_progress'])
+                ->with('services') // Eager load the services
+                ->orderBy('scheduled_at', 'asc')
+                ->get();
+
+            // Calculate statistics for the client.
+            $stats = [
+                'completedBookingsCount' => Booking::where('user_id', $user->id)->where('status', 'completed')->count(),
+                'totalSpent' => Booking::where('user_id', $user->id)->where('status', 'completed')->sum('total_price'),
+                // This assumes you have a 'rewards' relationship defined in your User model.
+                'availableRewards' => $user->rewards()->where('is_claimed', false)->count(),
+            ];
+
+            return Inertia::render('Client/Dashboard', [
+                'user' => $user->only('id', 'name', 'email'),
+                'upcomingBookings' => $upcomingBookings,
+                'activeBookings' => $activeBookings, // Pass active bookings to the component
+                'stats' => $stats,
+            ]);
+
+        })->name('dashboard');
+    });
 
 
     // --- Rutas para Administradores ---
@@ -82,6 +126,7 @@ Route::middleware([
         Route::resource('rewards', UserRewardController::class);
     });
 
+
     // --- Rutas para Empleados ---
     // Nota: Los admins también suelen tener acceso a las rutas de empleados.
     Route::middleware(['role:Admin,Empleado'])->prefix('employee')->name('employee.')->group(function () {
@@ -96,18 +141,27 @@ Route::middleware([
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
     });
 
-    // --- Rutas para Clientes ---
-    Route::middleware(['role:Cliente'])->prefix('client')->name('client.')->group(function () {
+
+    Route::middleware(['auth', 'role:Cliente'])->prefix('client')->name('client.')->group(function () {
+        
         // MIS RESERVACIONES --------------------
         // --------------------------------------
-        // El cliente solo puede ver su historial, ver una reserva, y cancelarla.
-        // La creación se hace desde la ruta pública.
-        Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
-        Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
-        Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
-        Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+
+        // Ruta para obtener horarios disponibles (vía API). 
+        // Se declara antes del resource para que 'available-times' no sea interpretado como un ID de reserva.
+        Route::post('bookings/available-times', [BookingController::class, 'getAvailableTimes'])->name('bookings.availableTimes');
+
+        // Rutas resource para las operaciones CRUD estándar de las reservas.
+        // Esto genera automáticamente las rutas para index, create, store, show, edit y update.
+        Route::resource('bookings', BookingController::class)->only([
+            'index', 'create', 'store', 'show', 'edit', 'update'
+        ]);
+
+        // Rutas personalizadas para acciones específicas sobre una reserva.
+        // Se declaran después del resource.
         Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-        Route::post('bookings/available-times', [BookingController::class, 'getAvailableTimes'])->name('bookings.availableTimes'); // Ruta para obtener horarios disponibles (vía API)
+        Route::patch('bookings/{booking}/update-notes', [BookingController::class, 'updateNotes'])->name('bookings.updateNotes');
+
 
         // MIS RECOMPENSAS ----------------------
         // --------------------------------------

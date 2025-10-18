@@ -146,17 +146,163 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        //
+        // 1. Autorización: Nos aseguramos de que el usuario solo pueda ver sus propias reservas.
+        // Si el user_id de la reserva no coincide con el ID del usuario autenticado, se deniega el acceso.
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para ver esta página.');
+        }
+
+        // 2. Carga Eficiente de Datos (Eager Loading):
+        // Cargamos las relaciones 'services' y 'employee' para evitar múltiples consultas a la base de datos
+        // en la vista. Esto mejora significativamente el rendimiento.
+        $booking->load('services', 'employee');
+
+        // 3. Renderizar la Vista:
+        // Pasamos el objeto de la reserva (con los datos ya cargados) al componente de Vue.
+        return Inertia::render('Client/Bookings/Show', [
+            'booking' => $booking,
+        ]);
     }
 
     public function edit(Booking $booking)
     {
-        //
+        // 1. Autorización: Asegurarnos de que el cliente solo puede editar sus propias reservas.
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para realizar esta acción.');
+        }
+
+        // 2. Lógica de negocio: Solo se pueden editar citas pendientes o confirmadas.
+        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+            return back()->with('error', 'Esta reserva ya no puede ser editada.');
+        }
+
+        // 3. Cargar datos necesarios para el formulario
+        $services = Service::where('is_active', true)->orderBy('name')->get();
+        
+        // Cargamos los servicios que ya tiene la reserva para pre-seleccionarlos
+        $booking->load('services');
+
+        return Inertia::render('Client/Bookings/Edit', [
+            'booking' => $booking,
+            'services' => $services,
+            'user' => [ // Pasamos info del usuario por consistencia con el create
+                'name' => Auth::user()->name,
+                'phone_number' => Auth::user()->phone_number,
+            ]
+        ]);
     }
 
     public function update(Request $request, Booking $booking)
     {
-        //
+        // 1. Autorización
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para realizar esta acción.');
+        }
+
+        // 2. Lógica de negocio: Verificar estado de la reserva
+        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+            return back()->with('error', 'Esta reserva ya no puede ser actualizada.');
+        }
+
+        // 3. Validación de datos (muy similar a store)
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'address' => 'required|string|max:500',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'services' => 'required|array|min:1',
+            'services.*' => 'exists:services,id',
+            'scheduled_at' => 'required|date_format:Y-m-d H:i',
+            'total_price' => 'required|numeric|min:0',
+            'payment_method' => 'required|string|in:Efectivo,Tarjeta,Transferencia',
+            'notes' => 'nullable|string',
+        ]);
+
+        // 4. Calcular duración y verificar disponibilidad de empleado
+        $selectedServices = Service::whereIn('id', $validatedData['services'])->get();
+        $totalDuration = $selectedServices->sum('duration_minutes');
+        $requestedStartTime = Carbon::parse($validatedData['scheduled_at']);
+        $requestedEndTime = $requestedStartTime->copy()->addMinutes($totalDuration);
+
+        $employees = User::where('role', 'Empleado')->where('is_active', true)->get();
+        $availableEmployeeId = null;
+
+        foreach ($employees as $employee) {
+            // Excluimos la reserva actual de la comprobación de disponibilidad
+            $isBusy = Booking::where('employee_id', $employee->id)
+                ->where('id', '!=', $booking->id) // <-- La diferencia clave
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->where(function ($query) use ($requestedStartTime, $requestedEndTime) {
+                    $query->where(function ($q) use ($requestedStartTime, $requestedEndTime) {
+                        $q->where('scheduled_at', '<', $requestedEndTime)
+                          ->whereRaw('DATE_ADD(scheduled_at, INTERVAL (SELECT SUM(s.duration_minutes) FROM services s JOIN booking_service bs ON s.id = bs.service_id WHERE bs.booking_id = bookings.id) MINUTE) > ?', [$requestedStartTime]);
+                    });
+                })->exists();
+            
+            if (!$isBusy) {
+                $availableEmployeeId = $employee->id;
+                break;
+            }
+        }
+        
+        if (!$availableEmployeeId) {
+            return back()->withErrors(['scheduled_at' => 'El nuevo horario seleccionado no está disponible. Por favor, elige otro.']);
+        }
+
+        // 5. Transacción para actualizar de forma segura
+        DB::beginTransaction();
+        try {
+            $booking->update([
+                'employee_id' => $availableEmployeeId,
+                'scheduled_at' => $validatedData['scheduled_at'],
+                'total_price' => $validatedData['total_price'],
+                'payment_method' => $validatedData['payment_method'],
+                'address' => $validatedData['address'],
+                'latitude' => $validatedData['latitude'],
+                'longitude' => $validatedData['longitude'],
+                'notes' => $validatedData['notes'],
+            ]);
+
+            // Sincronizar servicios en la tabla pivote (más eficiente que detach/attach)
+            $servicesToSync = [];
+            foreach ($selectedServices as $service) {
+                $servicesToSync[$service->id] = ['price_at_booking' => $service->price];
+            }
+            $booking->services()->sync($servicesToSync);
+            
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+            // Opcional: Loggear el error $e->getMessage() para depuración
+            return back()->with('error', 'Ocurrió un error al actualizar tu reserva. Inténtalo de nuevo.');
+        }
+
+        return redirect()->route('client.bookings.index')->with('success', '¡Tu cita ha sido actualizada exitosamente!');
+    }
+
+    /**
+     * Permite a un cliente actualizar las notas de una de sus reservas.
+     */
+    public function updateNotes(Request $request, Booking $booking)
+    {
+        // 1. Autorización: Asegurarnos de que el cliente solo puede editar sus propias reservas.
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para realizar esta acción.');
+        }
+
+        // 2. Validación: Validamos que las notas sean un texto (pueden ser nulas).
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        // 3. Actualización: Actualizamos el campo 'notes' de la reserva.
+        $booking->update([
+            'notes' => $request->input('notes'),
+        ]);
+
+        // 4. Redirección: Volvemos a la página anterior con un mensaje de éxito.
+        return back()->with('success', 'Notas actualizadas correctamente.');
     }
 
     public function destroy(Booking $booking)

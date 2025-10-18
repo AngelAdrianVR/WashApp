@@ -109,7 +109,7 @@ const statusInfo = (status) => {
 
                     <!-- Listado de Reservas -->
                     <div v-else class="space-y-4">
-                        <Card v-for="booking in bookings.data" :key="booking.id" class="overflow-hidden">
+                        <Card v-for="booking in bookings.data" @click="$inertia.visit(route('client.bookings.show', booking.id))" :key="booking.id" class="overflow-hidden cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900">
                             <template #content>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-2">
                                     <!-- Columna 1: Fecha y Estado -->
