@@ -17,7 +17,6 @@ onMounted(() => {
       // Estilos aleatorios para cada burbuja
       const size = Math.random() * 80 + 10 + 'px'; // Tamaño entre 10px y 60px
       const animationDuration = Math.random() * 9 + 7 + 's'; // Duración entre 8s y 18s
-      // Se reduce el retraso para que aparezcan casi de inmediato.
       const animationDelay = Math.random() * 2 + 's'; // Retraso entre 0s y 2s
 
       bubble.style.width = size;
@@ -31,22 +30,38 @@ onMounted(() => {
   }
 
   // --- Lógica para las transiciones al hacer scroll ---
-  // Se crea un observador que vigila cuándo los elementos entran en la pantalla.
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      // Si el elemento es visible, se le añade una clase para activar la animación.
       if (entry.isIntersecting) {
         entry.target.classList.add('fade-in-visible');
-        observer.unobserve(entry.target); // Se deja de observar una vez animado para mejor rendimiento.
+        observer.unobserve(entry.target);
       }
     });
   }, {
-    threshold: 0.1 // La animación se dispara cuando el 10% del elemento es visible.
+    threshold: 0.1
   });
-
-  // Se seleccionan todos los elementos que queremos animar.
   const elementsToAnimate = document.querySelectorAll('[data-scroll-fade]');
   elementsToAnimate.forEach(el => observer.observe(el));
+  
+  // --- Lógica para el slider de Antes y Después ---
+  const slider = document.getElementById('image-slider');
+  const beforeImage = document.getElementById('before-image');
+  const sliderLine = document.querySelector('.slider-line');
+  const sliderHandle = document.querySelector('.slider-handle');
+
+  if (slider && beforeImage && sliderLine && sliderHandle) {
+      const updateSlider = (value) => {
+          beforeImage.style.clipPath = `polygon(0 0, ${value}% 0, ${value}% 100%, 0 100%)`;
+          sliderLine.style.left = `${value}%`;
+          sliderHandle.style.left = `${value}%`;
+      };
+      // Valor inicial
+      updateSlider(slider.value);
+      // Evento al mover el slider
+      slider.addEventListener('input', (e) => {
+          updateSlider(e.target.value);
+      });
+  }
 });
 
 
@@ -110,6 +125,71 @@ const memberBenefits = ref([
         description: 'Celebramos contigo. Recibe un lavado básico completamente gratis durante el mes de tu cumpleaños.'
     }
 ]);
+
+// (NOVEDAD) - Lista de testimonios
+const testimonials = ref([
+    {
+        quote: "El servicio fue increíble. Llegaron puntuales, fueron súper profesionales y mi auto quedó más limpio que cuando lo saqué de la agencia. ¡Totalmente recomendado!",
+        author: "Ana L., Zapopan",
+        rating: 5
+    },
+    {
+        quote: "Contraté el lavado a detalle y el resultado superó mis expectativas. Cuidan cada rincón del coche. El personal es muy amable y el servicio es de primera.",
+        author: "Carlos G., Guadalajara",
+        rating: 5
+    },
+    {
+        quote: "Muy buen servicio en general. El auto quedó muy limpio por dentro y por fuera. Solo tardaron unos 15 minutos más de lo estimado, pero valió la pena la espera.",
+        author: "Laura M., Tlaquepaque",
+        rating: 4
+    },
+    {
+        quote: "La comodidad de que vengan a tu casa no tiene precio. El lavado ecológico es una maravilla y el coche brilla como nuevo. Excelente atención al cliente.",
+        author: "Javier R., Zapopan",
+        rating: 5
+    }
+]);
+
+// (NOVEDAD) - Planes para Agencias
+const agencyPlans = ref([
+    {
+        name: 'Flotilla Bronce',
+        price: '$1,500',
+        period: '/mes',
+        carCount: '5-10 Autos',
+        features: [
+            'Lavado Ecológico Exterior',
+            'Aspirado Básico de Interiores',
+            'Limpieza de Cristales',
+            'Servicio Semanal'
+        ]
+    },
+    {
+        name: 'Flotilla Plata',
+        price: '$2,800',
+        period: '/mes',
+        carCount: '11-20 Autos',
+        features: [
+            'Todo en Bronce',
+            'Lavado a Detalle Exterior',
+            'Acondicionamiento de Plásticos',
+            'Prioridad de Agenda'
+        ],
+        popular: true
+    },
+    {
+        name: 'Flotilla Oro',
+        price: 'Personalizado',
+        period: '',
+        carCount: '20+ Autos',
+        features: [
+            'Todo en Plata',
+            'Limpieza Profunda de Interiores',
+            'Encerado Cerámico Básico',
+            'Ejecutivo de Cuenta Dedicado'
+        ]
+    }
+]);
 </script>
 
 <template>
@@ -151,6 +231,12 @@ const memberBenefits = ref([
                         <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
                            Desde una limpieza ecológica rápida hasta un detallado profundo. Tenemos el plan perfecto para que tu auto luzca impecable.
                         </p>
+                        <!-- (NOVEDAD) - Botón agregado -->
+                        <div class="mt-8" data-scroll-fade :style="{'transition-delay': '300ms'}">
+                            <a :href="route('landing.servicios')" class="bg-blue-500 text-white font-bold text-lg py-3 px-8 rounded-full hover:bg-blue-600 transition-colors duration-300 shadow-md hover:shadow-lg">
+                                Ver Servicios Disponibles
+                            </a>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -190,22 +276,114 @@ const memberBenefits = ref([
             </section>
             <!-- =========== Why Choose Us Section ENDS =========== -->
 
-            <!-- =========== Testimonial Section STARTS =========== -->
+            <!-- =========== Testimonial Section STARTS (MODIFICADO) =========== -->
             <section id="testimonios" class="py-20 lg:py-32 bg-sky-50">
-                <div class="container mx-auto px-6 text-center">
-                    <div class="max-w-3xl mx-auto">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800 mb-8">Lo que dicen nuestros clientes</h2>
-                        <div data-scroll-fade :style="{'transition-delay': '150ms'}" class="glass-card bg-white rounded-xl p-8 shadow-lg">
-                            <p class="text-slate-600 text-lg italic mb-6">"El servicio fue increíble. Llegaron puntuales, fueron súper profesionales y mi auto quedó más limpio que cuando lo saqué de la agencia. ¡Totalmente recomendado!"</p>
-                            <p class="font-bold text-slate-800">- Ana L., Zapopan</p>
-                            <div class="flex justify-center mt-4 text-yellow-400">
-                                <svg v-for="i in 5" :key="i" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Lo que dicen nuestros clientes</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        <div v-for="(testimonial, index) in testimonials" :key="index"
+                             data-scroll-fade
+                             :style="{ 'transition-delay': `${index * 100}ms` }"
+                             class="glass-card bg-white rounded-xl p-8 shadow-lg flex flex-col justify-between text-center">
+                            <div>
+                                <p class="text-slate-600 text-lg italic mb-6">"{{ testimonial.quote }}"</p>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800">- {{ testimonial.author }}</p>
+                                <div class="flex justify-center mt-4 text-yellow-400">
+                                    <!-- Estrellas llenas -->
+                                    <svg v-for="i in testimonial.rating" :key="`filled-${i}`" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                    <!-- Estrellas vacías -->
+                                    <svg v-for="i in (5 - testimonial.rating)" :key="`empty-${i}`" class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.049-3.292l-2.8-2.034c-.784-.57-1.838.197-1.539 1.118l1.07 3.292a1 1 0 00.364 1.118l2.8 2.034c.784.57 1.838-.197 1.539-1.118l-1.07-3.292a1 1 0 00-.364-1.118zM11.95 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clip-rule="evenodd" /></svg>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
             <!-- =========== Testimonial Section ENDS =========== -->
+
+            <!-- =========== (NOVEDAD) Agency Pricing Section STARTS =========== -->
+            <section id="agencias" class="py-20 lg:py-32">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Planes Especiales para Agencias y Flotillas</h2>
+                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                            Soluciones a la medida para mantener tu flotilla de vehículos siempre impecable. Ahorra tiempo y dinero con nuestros paquetes.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                        <div v-for="(plan, index) in agencyPlans" :key="index"
+                             data-scroll-fade
+                             :style="{ 'transition-delay': `${index * 150}ms` }"
+                             :class="[
+                                'rounded-xl p-8 border flex flex-col relative',
+                                plan.popular ? 'bg-slate-800 text-white border-blue-500 ring-2 ring-blue-500 transform md:scale-105' : 'bg-white text-slate-800 border-slate-200'
+                             ]">
+                            <div v-if="plan.popular" class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                                <span class="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Más Popular</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-1">{{ plan.name }}</h3>
+                            <p :class="['mb-6', plan.popular ? 'text-slate-300' : 'text-slate-500']">{{ plan.carCount }}</p>
+                            <div class="mb-6">
+                                <span class="text-5xl font-extrabold">{{ plan.price }}</span>
+                                <span v-if="plan.period" :class="['text-lg', plan.popular ? 'text-slate-400' : 'text-slate-500']">{{ plan.period }}</span>
+                            </div>
+                            <ul class="space-y-4 mb-8 flex-grow">
+                                <li v-for="feature in plan.features" :key="feature" class="flex items-start">
+                                    <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>{{ feature }}</span>
+                                </li>
+                            </ul>
+                            <a href="#agendar" 
+                               :class="[
+                                    'w-full text-center font-bold py-3 rounded-lg transition-colors duration-300 mt-auto',
+                                    plan.popular ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                               ]">
+                                Contactar para Contratar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- =========== Agency Pricing Section ENDS =========== -->
+            
+            <!-- =========== (NOVEDAD) Gallery Section STARTS =========== -->
+            <section id="galeria" class="py-20 lg:py-32 bg-slate-50">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Resultados que Hablan por Sí Mismos</h2>
+                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                            Desliza para ver la transformación. Así es como devolvemos el brillo y la vida a cada vehículo que tratamos.
+                        </p>
+                    </div>
+
+                    <div data-scroll-fade :style="{'transition-delay': '300ms'}" class="max-w-4xl mx-auto">
+                        <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl comparison-slider">
+                            <!-- Imagen Después (fondo) -->
+                            <img id="after-image" src="@/../../public/images/auto-limpio-1.png" alt="Coche limpio y brillante" class="absolute inset-0 w-full h-full object-cover select-none">
+                            
+                            <!-- Imagen Antes (frente, se recorta) -->
+                            <div id="before-image" class="absolute inset-0 w-full h-full overflow-hidden select-none">
+                                <img src="@/../../public/images/auto-sucio-1.png" alt="Coche sucio antes del lavado" class="h-full w-full object-cover">
+                            </div>
+                            
+                            <!-- Slider -->
+                            <input type="range" id="image-slider" min="0" max="100" value="50" class="absolute inset-0 w-full h-full cursor-pointer opacity-0">
+                            
+                            <!-- Barra divisoria -->
+                            <div class="slider-line"></div>
+                            <!-- Círculo del slider -->
+                            <div class="slider-handle">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- =========== Gallery Section ENDS =========== -->
 
             <!-- =========== Member Benefits Section STARTS =========== -->
             <section id="beneficios" class="py-20 lg:py-32">
@@ -268,18 +446,13 @@ const memberBenefits = ref([
     width: 100%;
     height: 100%;
     overflow: hidden;
-    z-index: 1; /* Colocado sobre el fondo (z-0) y debajo del texto (z-10) */
-    pointer-events: none; /* Evita que las burbujas interfieran con el clic */
+    z-index: 1; 
+    pointer-events: none;
 }
 
-/* CORRECCIÓN: 
-  Usamos el combinador :deep() para que los estilos de .bubble 
-  se apliquen también a los elementos hijos creados con JavaScript, 
-  ignorando el 'scoped' solo para esta regla.
-*/
 :deep(.bubble) {
     position: absolute;
-    bottom: -100px; /* Empiezan desde abajo, fuera de la pantalla */
+    bottom: -100px;
     background-color: rgba(74, 138, 241, 0.301); 
     border-radius: 50%;
     animation-name: bubble-float;
@@ -293,7 +466,7 @@ const memberBenefits = ref([
         opacity: 0.9;
     }
     100% {
-        transform: translateY(-120vh); /* Flotan hasta desaparecer por arriba */
+        transform: translateY(-120vh);
         opacity: 0;
     }
 }
@@ -325,5 +498,41 @@ const memberBenefits = ref([
 .cta-button:hover {
     transform: translateY(-4px) scale(1.02);
     box-shadow: 0 12px 25px rgba(2, 132, 199, 0.2);
+}
+
+/* (NOVEDAD) --- Estilos para el slider de comparación de imágenes --- */
+#before-image {
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+}
+
+.slider-line {
+    position: absolute;
+    top: 0;
+    left: 50%; /* Posición inicial */
+    width: 4px;
+    height: 100%;
+    background: white;
+    transform: translateX(-50%);
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transition: left 0.05s ease-out;
+}
+
+.slider-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%; /* Posición inicial */
+    width: 50px;
+    height: 50px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    pointer-events: none;
+    color: #0ea5e9; /* Color de las flechas */
+    transition: left 0.05s ease-out;
 }
 </style>

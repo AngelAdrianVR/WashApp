@@ -84,7 +84,7 @@ const logout = () => {
                         <div class="flex justify-end h-16">
 
                             <!-- Menú de usuario y switch de tema a la derecha -->
-                            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                            <div class="flex items-center ms-6">
                                 <!-- Switch para Dark Mode -->
                                 <div class="flex items-center mr-4">
                                     <i class="pi pi-sun text-yellow-500 mr-2" />
@@ -93,7 +93,7 @@ const logout = () => {
                                 </div>
 
                                 <!-- Menú de usuario -->
-                                <div class="ms-3 relative">
+                                <div class="ms-3 relative hidden md:block">
                                     <Dropdown align="right" width="48">
                                         <template #trigger>
                                             <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
@@ -137,13 +137,13 @@ const logout = () => {
 
                 <!-- Encabezado de la Página -->
                 <header v-if="$slots.header" class="bg-white dark:bg-gray-800 shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                         <slot name="header" />
                     </div>
                 </header>
 
                 <!-- Contenido de la Página -->
-                <main class="flex-1 p-4 sm:p-6 lg:p-8">
+                <main class="flex-1 p-4 sm:p-6 lg:p-8 h-[calc(100vh-20rem)] overflow-auto">
                     <slot />
                 </main>
             </div>
