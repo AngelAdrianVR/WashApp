@@ -55,3 +55,115 @@ html {
   scrollbar-width: thin;
   scrollbar-color: #929292 transparent; /* color del thumb y del track */
 }
+
+/* ============================================================
+   Design system de la landing de WashApp
+   Paleta faded + bordes redondeados + glassmorphism ligero
+   ============================================================ */
+@layer components {
+  /* Fondo general de las páginas públicas */
+  .wa-page {
+    @apply bg-mist-50 text-mist-800 font-sans antialiased;
+    background-image:
+      radial-gradient(58rem 32rem at 10% -10%, rgba(187, 231, 191, 0.6), transparent 62%),
+      radial-gradient(48rem 32rem at 94% 2%, rgba(179, 220, 241, 0.65), transparent 62%),
+      linear-gradient(180deg, #fbfdfe 0%, #f4f9fb 46%, #f8fbfc 100%);
+  }
+
+  /* Tarjeta base: superficie translúcida con sombra suave */
+  .wa-card {
+    @apply rounded-3xl border border-white/70 bg-white/75 shadow-soft backdrop-blur-md;
+  }
+
+  .wa-card-solid {
+    @apply rounded-3xl border border-mist-200/80 bg-white shadow-soft;
+  }
+
+  /* Contenedor con degradado tenue para secciones destacadas */
+  .wa-panel {
+    @apply rounded-3xl border border-white/60 bg-gradient-to-br from-white/85 via-white/65 to-sage-50/60 shadow-soft backdrop-blur-md;
+  }
+
+  /* Botones */
+  .wa-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2 focus-visible:ring-offset-mist-50;
+  }
+
+  .wa-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-cloud-600 text-white shadow-soft hover:-translate-y-0.5 hover:bg-cloud-700 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2;
+  }
+
+  .wa-btn-sage {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-sage-500 text-white shadow-soft hover:-translate-y-0.5 hover:bg-sage-600 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2;
+  }
+
+  .wa-btn-soft {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 border border-mist-200 bg-white/80 text-mist-700 hover:border-mist-300 hover:bg-white hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2;
+  }
+
+  .wa-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-mist-600 transition-all duration-300 hover:bg-white/70 hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400;
+  }
+
+  /* Chips / etiquetas */
+  .wa-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-600 backdrop-blur-sm;
+  }
+
+  /* Campos de formulario */
+  .wa-label {
+    @apply mb-2 block text-xs font-semibold uppercase tracking-wider text-mist-500;
+  }
+
+  .wa-input {
+    @apply w-full rounded-2xl border border-mist-200 bg-white/90 px-4 py-3 text-sm text-mist-800 shadow-sm transition placeholder:text-mist-400 focus:border-cloud-400 focus:ring-2 focus:ring-cloud-200;
+  }
+
+  /* Tarjeta seleccionable del flujo de agendado */
+  .wa-option {
+    @apply w-full cursor-pointer rounded-2xl border border-mist-200 bg-white/70 p-4 text-left transition-all duration-300 hover:border-cloud-300 hover:bg-white hover:shadow-soft;
+  }
+
+  .wa-option-active {
+    @apply border-sage-400 bg-sage-50/80 shadow-soft ring-2 ring-sage-200;
+  }
+
+  /* Etiquetas de sección */
+  .wa-eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-sage-300/80 bg-sage-50/90 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sage-700;
+  }
+
+  .wa-title {
+    @apply font-semibold tracking-tight text-mist-900;
+  }
+}
+
+/* Animación de aparición al hacer scroll (usada por LandingLayout) */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

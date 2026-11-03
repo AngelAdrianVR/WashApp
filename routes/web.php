@@ -6,6 +6,7 @@ use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
+use App\Http\Controllers\VehicleCategoryController;
 use App\Models\Booking;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,8 @@ Route::get('/', [LandingController::class, 'index'])->name('landing.index');
 Route::get('/servicios', [LandingController::class, 'services'])->name('landing.servicios');
 Route::get('/agendar', [LandingController::class, 'appointment'])->name('landing.agendar');
 Route::get('/promociones', [LandingController::class, 'promotions'])->name('landing.promociones');
+Route::get('/premios', [LandingController::class, 'rewards'])->name('landing.premios');
+Route::get('/contacto', [LandingController::class, 'contact'])->name('landing.contacto');
 
 
 Route::middleware([
@@ -104,6 +107,10 @@ Route::middleware([
         Route::resource('services', ServiceController::class);
         Route::patch('services/{service}/toggle-active', [ServiceController::class, 'toggleActive'])->name('services.toggleActive');
         Route::post('services/{service}/add-images', [ServiceController::class, 'addImages'])->name('services.addImages'); // Ruta para agregar nuevas imágenes a un servicio
+
+        // CATEGORÍAS DE VEHÍCULO ----------------
+        // --------------------------------------
+        Route::resource('vehicle-categories', VehicleCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
 
 
         // PROMOCIONES --------------------------
