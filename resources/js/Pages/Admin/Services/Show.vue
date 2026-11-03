@@ -147,6 +147,45 @@ const fileUploader = ref(null);
                                         <Tag :value="service.is_active ? 'Activo' : 'Inactivo'" :severity="getStatusSeverity(service.is_active)" />
                                     </div>
                                 </div>
+                                <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-600 dark:text-gray-400">Clasificación</h3>
+                                        <Tag
+                                            :value="service.is_addon ? 'Servicio adicional' : 'Paquete de lavado'"
+                                            :severity="service.is_addon ? 'contrast' : 'success'"
+                                        />
+                                    </div>
+                                    <div class="text-right">
+                                        <h3 class="font-semibold text-gray-600 dark:text-gray-400">Puntos</h3>
+                                        <p class="font-bold text-amber-600">+{{ service.points }} pts</p>
+                                    </div>
+                                </div>
+
+                                <div v-if="service.features?.length" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <h3 class="font-semibold text-gray-600 dark:text-gray-400">Puntos que incluye</h3>
+                                    <ul class="mt-2 space-y-1 text-sm text-gray-800 dark:text-gray-200">
+                                        <li v-for="feature in service.features" :key="feature" class="flex gap-2">
+                                            <i class="pi pi-check text-green-500 text-xs mt-1"></i>
+                                            <span>{{ feature }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div v-if="service.vehicle_categories?.length" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <h3 class="font-semibold text-gray-600 dark:text-gray-400">Precio por categoría</h3>
+                                    <div class="mt-2 space-y-2 text-sm">
+                                        <div
+                                            v-for="category in service.vehicle_categories"
+                                            :key="category.id"
+                                            class="flex items-center justify-between gap-3"
+                                        >
+                                            <span class="text-gray-800 dark:text-gray-200">{{ category.name }}</span>
+                                            <span class="text-gray-600 dark:text-gray-400">
+                                                {{ formatCurrency(category.price) }} · {{ category.duration_minutes }} min
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </template>
                     </Card>

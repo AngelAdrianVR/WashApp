@@ -1,171 +1,260 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
 import { Link } from '@inertiajs/vue3';
 
-// Lista de servicios actualizada con precios por tamaño y más detalles
-const services = ref([
-  {
-    id: 1,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 15.5l3.5-3.5 3.5 3.5 3.5-3.5 3.5 3.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20 10 10 0 000-20z" /></svg>`,
-    title: 'Lavado Ecológico en Seco',
-    description: 'Nuestra opción más ecológica. Limpieza y encerado en un solo paso sin usar una gota de agua.',
-    prices: [
-        { size: 'Auto Chico', value: 220 },
-        { size: 'Auto Mediano', value: 250 },
-        { size: 'Auto Grande', value: 290 }
-    ],
-    features: [
-      'Limpieza exterior con polímeros y cera carnauba',
-      'Ahorro total de agua',
-      'Brillo y repelencia al polvo',
-      'Aspirado de interiores y tapetes',
-      'Ideal para mantenimiento semanal'
-    ]
-  },
-  {
-    id: 2,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" /></svg>`,
-    title: 'Lavado Básico Exterior',
-    description: 'Perfecto para el mantenimiento regular. Un lavado exterior completo que deja tu auto brillante y protegido.',
-    prices: [
-        { size: 'Auto Chico', value: 250 },
-        { size: 'Auto Mediano', value: 280 },
-        { size: 'Auto Grande', value: 320 }
-    ],
-    features: [
-      'Lavado de carrocería con shampoo pH neutro',
-      'Lavado de llantas y rines por fuera',
-      'Abrillantado de llantas',
-      'Abrillantado de plásticos exteriores',
-      'Aspirado a profundidad de interiores y cajuela',
-      'Lavado de tapetes'
-    ]
-  },
-  {
-    id: 3,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`,
-    title: 'Lavado Premium Completo',
-    description: 'El servicio ideal para una limpieza profunda tanto exterior como interior, con un acabado superior.',
-    prices: [
-        { size: 'Auto Chico', value: 380 },
-        { size: 'Auto Mediano', value: 420 },
-        { size: 'Auto Grande', value: 480 }
-    ],
-    features: [
-      'Todo lo del Lavado Básico',
-      'Abrillantado de tolvas',
-      'Cera líquida para brillo extra',
-      'Acondicionador de plásticos interiores',
-      'Suministro de agua y luz para el servicio'
-    ]
-  },
-  {
-    id: 4,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`,
-    title: 'Detallado de Interiores',
-    description: 'Renueva por completo el interior de tu auto, eliminando manchas, olores y bacterias de cada rincón.',
-    prices: [
-        { size: 'Auto Chico', value: 1500 },
-        { size: 'Auto Mediano', value: 1800 },
-        { size: 'Auto Grande', value: 2000 }
-    ],
-    features: [
-        'Lavado de carrocería de cortesía',
-        'Limpieza de puertas y consola central',
-        'Limpieza detallada de tablero y portavasos',
-        'Acondicionamiento de plásticos interiores',
-        'Lavado de asientos con máquina de inyección-succión'
-    ]
-  },
-  {
-    id: 5,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>`,
-    title: 'Pulido y Encerado Cerámico',
-    description: 'Devuelve el brillo de agencia, elimina rayones superficiales y protege la pintura hasta por 6 meses.',
-     prices: [
-        { size: 'Auto Chico', value: 1300 },
-        { size: 'Auto Mediano', value: 1600 },
-        { size: 'Auto Grande', value: 1900 }
-    ],
-    features: [
-      'Lavado a detalle de carrocería',
-      'Descontaminación química y mecánica de pintura',
-      'Corrección de pintura de un paso (60-70% de swirls)',
-      'Aplicación de cera con polímeros cerámicos',
-      'Protección UV y alta repelencia al agua'
-    ]
-  }
-]);
+const props = defineProps({
+    vehicleCategories: { type: Array, default: () => [] },
+    packages: { type: Array, default: () => [] },
+    addons: { type: Array, default: () => [] },
+});
+
+const nf = new Intl.NumberFormat('es-MX');
+
+// Tipo de vehículo activo para mostrar precios y tiempos de referencia
+const activeCategory = ref(props.vehicleCategories[0]?.id ?? null);
+const activeCategoryName = computed(
+    () => props.vehicleCategories.find((category) => category.id === activeCategory.value)?.name ?? ''
+);
+
+const typeMeta = {
+    Seco: { icon: 'leaf', tone: 'sage', water: '0 L de agua', label: 'Lavado en seco' },
+    Agua: { icon: 'drop', tone: 'cloud', water: '≈ 15 L de agua', label: 'Lavado con agua' },
+};
+
+const addonIcons = ['sparkle', 'seat', 'fabric', 'hand', 'wind', 'engine'];
+
+const iconPaths = {
+    leaf: 'M20 4c0 8-5 12-11 12H5c0-7 5-11 11-11h4z|M5 20c1-4 4-7 8-9',
+    drop: 'M12 3s6 6.2 6 10.5A6 6 0 016 13.5C6 9.2 12 3 12 3z',
+    sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z|M18 16l.9 2.1L21 19l-2.1.9L18 22l-.9-2.1L15 19l2.1-.9L18 16z',
+    seat: 'M7 4h6a3 3 0 013 3v7H7V4z|M5 14h12a2 2 0 012 2v4H7a2 2 0 01-2-2v-4z',
+    fabric: 'M4 6h16v4a4 4 0 01-4 4H8a4 4 0 01-4-4V6z|M8 14v6M16 14v6',
+    hand: 'M8 11V6a1.5 1.5 0 013 0v5|M11 11V4.5a1.5 1.5 0 013 0V11|M14 11V6.5a1.5 1.5 0 013 0V14a6 6 0 01-6 6h-1a5 5 0 01-5-5v-3a2 2 0 114 0',
+    wind: 'M4 8h9a3 3 0 100-6|M4 12h13a3 3 0 110 6H9|M4 16h5',
+    engine: 'M6 9h3V7h6v2h2l2 3h2v4h-2l-2 3H9l-2-2H6a2 2 0 01-2-2v-4a2 2 0 012-2z|M10 12h4',
+};
+
+const durationLabel = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    if (hours === 0) return `${rest} min`;
+    return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+};
+
+// Precio y duración del paquete según la categoría seleccionada
+const variantFor = (service) => service.variants?.[activeCategory.value] ?? null;
+const priceFor = (service) => Number(variantFor(service)?.price ?? service.price ?? 0);
+const minutesFor = (service) => Number(variantFor(service)?.duration_minutes ?? service.duration_minutes ?? 0);
 </script>
 
 <template>
-    <LandingLayout :title="'Nuestros Servicios'">
-        <main class="bg-slate-50 text-gray-800">
-            <!-- =========== Services Section STARTS =========== -->
-            <section id="servicios" class="py-24 lg:py-32 pt-36">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 leading-tight">
-                            El Plan Perfecto para tu Auto
-                        </h1>
-                        <p class="text-slate-600 mt-4 max-w-2xl mx-auto text-lg">
-                           Ofrecemos una gama completa de servicios de detallado automotriz a domicilio. Elige el que mejor se adapte a tus necesidades y agenda hoy mismo.
+    <LandingLayout title="Servicios">
+        <div class="px-3 sm:px-5">
+            <div class="mx-auto max-w-7xl">
+                <!-- ==================== ENCABEZADO ==================== -->
+                <header class="pt-8 text-center sm:pt-10" data-reveal>
+                    <span class="wa-eyebrow">Servicios</span>
+                    <h1 class="wa-title mx-auto mt-5 max-w-3xl text-4xl leading-tight sm:text-5xl">
+                        Limpieza profesional, donde estés
+                        <span class="block bg-gradient-to-r from-cloud-600 to-sage-500 bg-clip-text text-transparent">
+                            y con el agua justa
+                        </span>
+                    </h1>
+                    <p class="mx-auto mt-5 max-w-2xl text-mist-500">
+                        Elige la modalidad que mejor se adapte a tu espacio y suma los adicionales que tu auto
+                        necesita. Precios y tiempos dependen de tu tipo de vehículo.
+                    </p>
+                </header>
+
+                <!-- ==================== MODALIDADES ==================== -->
+                <section class="mt-14">
+                    <div class="flex flex-col items-center justify-between gap-5 sm:flex-row" data-reveal>
+                        <h2 class="text-2xl font-semibold tracking-tight text-mist-900">Modalidades principales</h2>
+
+                        <!-- Selector de categoría de vehículo -->
+                        <div v-if="vehicleCategories.length" class="inline-flex flex-wrap rounded-2xl border border-mist-200 bg-white/70 p-1 shadow-sm">
+                            <button
+                                v-for="category in vehicleCategories"
+                                :key="category.id"
+                                type="button"
+                                @click="activeCategory = category.id"
+                                class="rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300"
+                                :class="
+                                    activeCategory === category.id
+                                        ? 'bg-cloud-600 text-white shadow-sm'
+                                        : 'text-mist-500 hover:text-mist-800'
+                                "
+                            >
+                                {{ category.name }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="packages.length" class="mt-6 grid gap-5 lg:grid-cols-2">
+                        <article
+                            v-for="(service, index) in packages"
+                            :key="service.id"
+                            class="wa-card flex flex-col p-7 sm:p-9"
+                            data-reveal
+                            :style="{ transitionDelay: `${index * 100}ms` }"
+                        >
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <span
+                                    class="grid h-12 w-12 place-items-center rounded-2xl"
+                                    :class="
+                                        (typeMeta[service.type] ?? typeMeta.Seco).tone === 'sage'
+                                            ? 'bg-sage-100 text-sage-600'
+                                            : 'bg-cloud-100 text-cloud-600'
+                                    "
+                                >
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                        <template v-for="(d, i) in iconPaths[(typeMeta[service.type] ?? typeMeta.Seco).icon].split('|')" :key="i">
+                                            <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
+                                        </template>
+                                    </svg>
+                                </span>
+
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="wa-chip">{{ (typeMeta[service.type] ?? typeMeta.Seco).water }}</span>
+                                    <span class="wa-chip">{{ durationLabel(minutesFor(service)) }}</span>
+                                    <span class="wa-chip border-sand-200 bg-sand-50/90 text-sand-600">
+                                        <i class="fa-solid fa-star"></i> +{{ nf.format(service.points) }} pts
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p class="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-sage-600">
+                                {{ (typeMeta[service.type] ?? typeMeta.Seco).label }}
+                            </p>
+                            <h3 class="mt-2 text-2xl font-semibold tracking-tight text-mist-900">{{ service.name }}</h3>
+                            <p class="mt-3 text-sm leading-relaxed text-mist-500">{{ service.description }}</p>
+
+                            <ul v-if="service.features.length" class="mt-6 space-y-2.5">
+                                <li
+                                    v-for="feature in service.features"
+                                    :key="feature"
+                                    class="flex items-start gap-2.5 text-sm text-mist-600"
+                                >
+                                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    {{ feature }}
+                                </li>
+                            </ul>
+
+                            <div class="mt-7 flex items-end justify-between gap-4 rounded-2xl bg-mist-50/80 p-4">
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-wider text-mist-400">
+                                        Precio {{ activeCategoryName }}
+                                    </p>
+                                    <p class="mt-1 text-2xl font-semibold text-mist-900">
+                                        ${{ nf.format(priceFor(service)) }}
+                                        <span class="text-sm font-normal text-mist-400">MXN</span>
+                                    </p>
+                                </div>
+                                <Link
+                                    :href="route('landing.agendar', { service: service.id, vehicle: activeCategory })"
+                                    class="wa-btn-sage"
+                                >
+                                    Agendar
+                                </Link>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div
+                        v-else
+                        class="mt-6 rounded-3xl border border-dashed border-mist-300 bg-white/60 p-10 text-center text-sm text-mist-500"
+                    >
+                        Estamos actualizando el catálogo de servicios. Vuelve en un momento.
+                    </div>
+                </section>
+
+                <!-- ==================== ADICIONALES ==================== -->
+                <section v-if="addons.length" class="mt-20">
+                    <div class="mx-auto max-w-2xl text-center" data-reveal>
+                        <span class="wa-eyebrow">Servicios adicionales</span>
+                        <h2 class="wa-title mt-5 text-3xl sm:text-4xl">Súmale lo que tu auto necesita</h2>
+                        <p class="mt-4 text-mist-500">
+                            Se agregan al servicio base durante el agendado y ajustan automáticamente el total, el
+                            tiempo estimado y los puntos que ganas.
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                        <div v-for="service in services" :key="service.id" class="glass-card bg-white rounded-xl p-8 flex flex-col transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300">
-                            <div class="flex items-center mb-4">
-                                <div class="text-blue-500 mr-4 flex-shrink-0" v-html="service.icon"></div>
-                                <h2 class="text-2xl font-bold text-slate-800">{{ service.title }}</h2>
-                            </div>
-                            <p class="text-slate-600 mb-6 flex-grow">{{ service.description }}</p>
-                            
-                            <h3 class="font-semibold text-slate-800 mb-3">¿Qué incluye?</h3>
-                            <ul class="text-left mb-6 space-y-2">
-                                <li v-for="feature in service.features" :key="feature" class="flex items-start">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-500 mr-2 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <article
+                            v-for="(addon, index) in addons"
+                            :key="addon.id"
+                            class="group wa-card flex flex-col p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift"
+                            data-reveal
+                            :style="{ transitionDelay: `${index * 70}ms` }"
+                        >
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="grid h-10 w-10 place-items-center rounded-2xl bg-sand-100 text-sand-600">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                        <template v-for="(d, i) in iconPaths[addonIcons[index % addonIcons.length]].split('|')" :key="i">
+                                            <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
+                                        </template>
                                     </svg>
-                                    <span class="text-slate-700">{{ feature }}</span>
-                                </li>
-                            </ul>
-                            
-                            <div class="mt-auto">
-                                <div class="bg-slate-100 rounded-lg p-4 mb-6">
-                                    <h3 class="font-semibold text-center text-slate-800 mb-3">Precios</h3>
-                                    <div class="flex justify-around text-center">
-                                        <div v-for="price in service.prices" :key="price.size">
-                                            <p class="text-sm text-slate-600">{{ price.size }}</p>
-                                            <p class="font-bold text-slate-800 text-lg">${{ price.value }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                 <Link :href="route('landing.agendar', { service: service.id })" class="cta-button w-full block bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-3 px-8 rounded-full shadow-lg text-center">
-                                    Agendar Este Servicio
+                                </span>
+                                <span class="text-sm font-semibold text-mist-900">+ ${{ nf.format(addon.price) }}</span>
+                            </div>
+
+                            <h3 class="mt-4 text-base font-semibold text-mist-900">{{ addon.name }}</h3>
+                            <p class="mt-2 flex-1 text-sm leading-relaxed text-mist-500">{{ addon.description }}</p>
+
+                            <div class="mt-5 flex items-center justify-between border-t border-mist-200/70 pt-4">
+                                <span class="text-xs uppercase tracking-wider text-mist-400">
+                                    +{{ addon.duration_minutes }} min · +{{ addon.points }} pts
+                                </span>
+                                <Link
+                                    :href="route('landing.agendar', { addon: addon.id, vehicle: activeCategory })"
+                                    class="text-sm font-semibold text-cloud-600 transition hover:text-cloud-700"
+                                >
+                                    Agregar →
                                 </Link>
                             </div>
-                        </div>
+                        </article>
                     </div>
-                </div>
-            </section>
-            <!-- =========== Services Section ENDS =========== -->
-        </main>
+                </section>
+
+                <!-- ==================== QUÉ INCLUYE SIEMPRE ==================== -->
+                <section class="mt-20" data-reveal>
+                    <div class="wa-panel grid gap-8 p-8 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+                        <div>
+                            <span class="wa-eyebrow">Incluido en todo servicio</span>
+                            <h2 class="wa-title mt-5 text-2xl sm:text-3xl">El estándar WashApp no es opcional</h2>
+                            <p class="mt-3 text-sm leading-relaxed text-mist-500">
+                                Sin importar la modalidad o los adicionales que elijas, cada cita incluye el mismo
+                                protocolo de cuidado y respaldo.
+                            </p>
+                            <Link :href="route('landing.agendar')" class="wa-btn-primary mt-6">
+                                Comenzar mi reserva
+                            </Link>
+                        </div>
+
+                        <ul class="grid gap-3 sm:grid-cols-2">
+                            <li class="rounded-2xl border border-white/70 bg-white/70 p-4 backdrop-blur-sm">
+                                <p class="text-sm font-semibold text-mist-900">Inspección walkaround</p>
+                                <p class="mt-1 text-xs leading-relaxed text-mist-500">Fotos del estado inicial y final del vehículo.</p>
+                            </li>
+                            <li class="rounded-2xl border border-white/70 bg-white/70 p-4 backdrop-blur-sm">
+                                <p class="text-sm font-semibold text-mist-900">Operador verificado</p>
+                                <p class="mt-1 text-xs leading-relaxed text-mist-500">Identidad validada y capacitación interna.</p>
+                            </li>
+                            <li class="rounded-2xl border border-white/70 bg-white/70 p-4 backdrop-blur-sm">
+                                <p class="text-sm font-semibold text-mist-900">Productos biodegradables</p>
+                                <p class="mt-1 text-xs leading-relaxed text-mist-500">Seguros para la pintura, las personas y el entorno.</p>
+                            </li>
+                            <li class="rounded-2xl border border-white/70 bg-white/70 p-4 backdrop-blur-sm">
+                                <p class="text-sm font-semibold text-mist-900">Garantía de 24 h</p>
+                                <p class="mt-1 text-xs leading-relaxed text-mist-500">Retocamos cualquier detalle sin costo.</p>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </div>
     </LandingLayout>
 </template>
-
-<style scoped>
-.glass-card {
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-}
-.cta-button {
-    transition: all 0.3s ease;
-}
-.cta-button:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(2, 132, 199, 0.2);
-}
-</style>
-

@@ -1,11 +1,14 @@
 <?php
 
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CarController;
+use App\Http\Controllers\ClientProfileController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
+use App\Http\Controllers\VehicleCategoryController;
 use App\Models\Booking;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -13,12 +16,17 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+// Pantalla de carga en la raíz; luego redirige a /inicio
+Route::get('/', [LandingController::class, 'splash'])->name('splash');
+
 // ruta principal que muestra la página de inicio ---------------------------------------------
 // --------------------------------------------------------------------------------------------
-Route::get('/', [LandingController::class, 'index'])->name('landing.index');
+Route::get('/inicio', [LandingController::class, 'index'])->name('landing.index');
 Route::get('/servicios', [LandingController::class, 'services'])->name('landing.servicios');
 Route::get('/agendar', [LandingController::class, 'appointment'])->name('landing.agendar');
 Route::get('/promociones', [LandingController::class, 'promotions'])->name('landing.promociones');
+Route::get('/premios', [LandingController::class, 'rewards'])->name('landing.premios');
+Route::get('/contacto', [LandingController::class, 'contact'])->name('landing.contacto');
 
 
 Route::middleware([
@@ -105,6 +113,10 @@ Route::middleware([
         Route::patch('services/{service}/toggle-active', [ServiceController::class, 'toggleActive'])->name('services.toggleActive');
         Route::post('services/{service}/add-images', [ServiceController::class, 'addImages'])->name('services.addImages'); // Ruta para agregar nuevas imágenes a un servicio
 
+        // CATEGORÍAS DE VEHÍCULO ----------------
+        // --------------------------------------
+        Route::resource('vehicle-categories', VehicleCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
 
         // PROMOCIONES --------------------------
         // --------------------------------------
@@ -167,6 +179,21 @@ Route::middleware([
         // --------------------------------------
         // El cliente puede ver las recompensas/cupones que ha ganado.
         Route::get('rewards', [UserRewardController::class, 'index'])->name('rewards.index');
+
+        // MI PERFIL ----------------------------
+        // --------------------------------------
+        Route::get('profile', [ClientProfileController::class, 'show'])->name('profile.show');
+        Route::put('profile', [ClientProfileController::class, 'update'])->name('profile.update');
+        Route::post('profile/avatar', [ClientProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::delete('profile/avatar', [ClientProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+
+        // MIS VEHÍCULOS ------------------------
+        // --------------------------------------
+        Route::post('cars', [CarController::class, 'store'])->name('cars.store');
+        Route::put('cars/{car}', [CarController::class, 'update'])->name('cars.update');
+        Route::delete('cars/{car}', [CarController::class, 'destroy'])->name('cars.destroy');
+        Route::post('cars/{car}/photos', [CarController::class, 'storePhoto'])->name('cars.photos.store');
+        Route::delete('cars/{car}/photos/{media}', [CarController::class, 'destroyPhoto'])->name('cars.photos.destroy');
     });
 
 

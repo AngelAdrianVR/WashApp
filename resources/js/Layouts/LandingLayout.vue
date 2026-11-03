@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Link, Head } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { Link, Head, usePage } from '@inertiajs/vue3';
 
 // --- Props ---
 const props = defineProps({
@@ -8,191 +8,369 @@ const props = defineProps({
 });
 
 // --- SEO Metadata ---
-const siteName = "WashApp";
-const pageTitle = props.title ? `${props.title} | ${siteName}` : siteName;
-const description = "El cuidado premium que tu auto merece. Servicio de lavado de autos a domicilio, ecológico y de alta calidad en Zapopan, Jalisco.";
+const siteName = 'WashApp';
+const pageTitle = props.title || 'Lavado de autos a domicilio';
+const socialTitle = `${pageTitle} · ${siteName}`;
+const description =
+    'Lavado de autos a domicilio 100% digital: ecológico, sin efectivo y con operadores verificados. Reserva en línea y recupera tu tiempo.';
+
+const page = usePage();
+const currentUser = computed(() => page.props.auth?.user ?? null);
+const firstName = computed(() => currentUser.value?.name?.split(' ')[0] ?? '');
 
 // --- Navigation Links ---
 const navigation = ref([
     { name: 'Inicio', routeName: 'landing.index' },
     { name: 'Servicios', routeName: 'landing.servicios' },
     { name: 'Agendar', routeName: 'landing.agendar' },
-    { name: 'Promociones', routeName: 'landing.promociones' },
+    { name: 'Premios', routeName: 'landing.premios' },
+    { name: 'Contacto', routeName: 'landing.contacto' },
 ]);
 
-// Ref para controlar la visibilidad del menú móvil
 const isMobileMenuOpen = ref(false);
-
-// Ref para controlar el estado del navbar al hacer scroll
 const isScrolled = ref(false);
 
 const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+    isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
-// Función para actualizar el estado del navbar
 const handleScroll = () => {
-  isScrolled.value = window.scrollY > 10;
+    isScrolled.value = window.scrollY > 12;
 };
 
-// Agregar y remover el event listener del scroll
+let revealObserver = null;
+let mutationObserver = null;
+
+// Muestra con una transición suave los bloques marcados con [data-reveal].
+const observeReveals = () => {
+    revealObserver?.disconnect();
+
+    revealObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-revealed');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    document.querySelectorAll('[data-reveal]:not(.is-revealed)').forEach((el) => revealObserver.observe(el));
+};
+
+// Los bloques que aparecen después (pasos del flujo, confirmaciones…) también se revelan.
+const observeNewNodes = (node) => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    if (node.matches?.('[data-reveal]:not(.is-revealed)')) {
+        revealObserver.observe(node);
+    }
+
+    node.querySelectorAll?.('[data-reveal]:not(.is-revealed)').forEach((el) => revealObserver.observe(el));
+};
+
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    nextTick(() => {
+        observeReveals();
+
+        mutationObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => mutation.addedNodes.forEach(observeNewNodes));
+        });
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
+    });
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
+    window.removeEventListener('scroll', handleScroll);
+    revealObserver?.disconnect();
+    mutationObserver?.disconnect();
 });
+
+// Al navegar con Inertia se montan elementos nuevos: se vuelven a observar.
+watch(
+    () => page.url,
+    () => {
+        isMobileMenuOpen.value = false;
+        nextTick(observeReveals);
+    }
+);
 </script>
 
 <template>
-  <Head :title="pageTitle">
-      <meta name="description" :content="description">
-      <meta name="keywords" content="lavado de autos, detallado automotriz, lavado a domicilio, car wash, zapopan, guadalajara, ecológico">
-      <meta name="author" content="WashApp">
-      
-      <!-- Open Graph / Facebook -->
-      <meta property="og:type" content="website">
-      <meta property="og:title" :content="pageTitle">
-      <meta property="og:description" :content="description">
-      <!-- <meta property="og:image" content="URL_A_TU_IMAGEN_DE_PREVIEW"> -->
+    <Head :title="pageTitle">
+        <meta name="description" :content="description" />
+        <meta
+            name="keywords"
+            content="lavado de autos a domicilio, lavado ecológico en seco, car wash, lavado sin agua, agendar lavado, WashApp"
+        />
+        <meta name="author" content="WashApp" />
 
-      <!-- Twitter -->
-      <meta property="twitter:card" content="summary_large_image">
-      <meta property="twitter:title" :content="pageTitle">
-      <meta property="twitter:description" :content="description">
-      <!-- <meta property="twitter:image" content="URL_A_TU_IMAGEN_DE_PREVIEW"> -->
-  </Head>
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" :content="socialTitle" />
+        <meta property="og:description" :content="description" />
 
-  <div class="bg-slate-50 text-gray-800 font-sans">
-    <!-- =========== Header / Navigation STARTS =========== -->
-    <header 
-      id="navbar" 
-      class="fixed top-0 left-0 w-full z-50 transition-all duration-300"
-      :class="{ 'bg-slate-900/80 backdrop-blur-sm shadow-lg': isScrolled, 'bg-slate-900': !isScrolled }"
-    >
-      <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <!-- Logo -->
-        <Link :href="route('landing.index')" class="flex items-center space-x-2 text-2xl font-bold text-white">
-          <!-- Asegúrate que la ruta a tu logo sea correcta en producción -->
-          <img src="/images/isologo.png" alt="WashApp Logo" class="h-12 w-auto">
-          <p>Wash<span class="text-cyan-400">App</span></p>
-        </Link>
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" :content="socialTitle" />
+        <meta property="twitter:description" :content="description" />
+    </Head>
 
-        <!-- Desktop Menu -->
-        <div class="hidden lg:flex items-center space-x-8">
-          <Link
-            v-for="item in navigation"
-            :key="item.name"
-            :href="route(item.routeName)"
-            class="nav-link text-white"
-            :class="{ 'active-nav-link': route().current(item.routeName) }"
-          >
-            {{ item.name }}
-          </Link>
-        </div>
-        
-        <div class="hidden lg:flex items-center space-x-4">
-          <Link :href="route('login')" class="text-white hover:text-sky-400 transition">Iniciar sesión</Link>
-          <Link :href="route('register')" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">Regístrate</Link>
-        </div>
+    <div class="wa-page min-h-screen">
+        <!-- =========== Header / Navigation =========== -->
+        <header class="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
+            <nav
+                class="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-3xl border px-4 py-3 transition-all duration-300 sm:px-6"
+                :class="
+                    isScrolled
+                        ? 'border-white/70 bg-white/85 shadow-soft backdrop-blur-xl'
+                        : 'border-white/40 bg-white/55 backdrop-blur-md'
+                "
+            >
+                <!-- Logo -->
+                <Link :href="route('landing.index')" class="group flex items-center" aria-label="WashApp · Inicio">
+                    <img
+                        src="/images/logo-washapp.png"
+                        alt="WashApp · Eco Car Wash Móvil"
+                        class="h-12 w-auto transition-transform duration-300 group-hover:scale-[1.03] sm:h-14"
+                    />
+                </Link>
 
-        <!-- Mobile Menu Button -->
-        <button @click="toggleMobileMenu" class="lg:hidden text-white focus:outline-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-          </svg>
-        </button>
-      </nav>
-      
-      <!-- Mobile Menu -->
-      <div v-show="isMobileMenuOpen" class="lg:hidden bg-slate-800/95 backdrop-blur-sm">
-        <Link
-          v-for="item in navigation"
-          :key="item.name"
-          :href="route(item.routeName)"
-          @click="toggleMobileMenu" 
-          class="block py-3 px-6 text-center text-white hover:bg-sky-500/50"
-          :class="{ 'bg-sky-500/70 font-semibold': route().current(item.routeName) }"
-        >
-          {{ item.name }}
-        </Link>
-        <div class="border-t border-slate-700 my-2"></div>
-        <Link :href="route('login')" class="block py-3 px-6 text-center text-white hover:bg-sky-500/50">Iniciar sesión</Link>
-        <Link :href="route('register')" class="block m-4 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 text-center">Regístrate</Link>
-      </div>
-    </header>
-    <!-- =========== Header / Navigation ENDS =========== -->
-
-    <!-- El slot principal no necesita el padding-top porque las vistas ya lo tienen -->
-    <main>
-        <slot />
-    </main>
-
-    <!-- =========== Footer STARTS =========== -->
-    <footer class="bg-slate-900">
-        <div class="container mx-auto px-6 py-8">
-            <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-                <div class="flex items-center space-x-2 text-xl font-bold text-white mb-4 md:mb-0">
-                    <img src="/images/isologo.png" alt="WashApp Footer Logo" class="h-12 w-auto">
-                    <p>Wash<span class="text-cyan-400">App</span></p>
+                <!-- Desktop Menu -->
+                <div class="hidden items-center gap-1 lg:flex">
+                    <Link
+                        v-for="item in navigation"
+                        :key="item.name"
+                        :href="route(item.routeName)"
+                        class="rounded-2xl px-4 py-2 text-sm font-medium transition-colors duration-300"
+                        :class="
+                            route().current(item.routeName)
+                                ? 'bg-mist-100/80 text-mist-900'
+                                : 'text-mist-600 hover:bg-white/70 hover:text-mist-900'
+                        "
+                    >
+                        {{ item.name }}
+                    </Link>
                 </div>
-                 <!-- <div class="flex space-x-4 mt-4 md:mt-0">
-                    <a href="#" aria-label="Facebook" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg></a>
-                    <a href="#" aria-label="Twitter" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.71v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" /></svg></a>
-                    <a href="#" aria-label="Instagram" class="text-slate-400 hover:text-sky-400 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.013-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 016.345 4.52c.636-.247 1.363-.416 2.427-.465C9.793 4.013 10.147 4 12.573 4h-.01a12.04 12.04 0 01-.248 0zm0 1.442c-2.376 0-2.71.01-3.654.052-1.002.046-1.57.2-2.02.385a3.48 3.48 0 00-1.24 1.24c-.184.45-.338 1.018-.385 2.02-.043.944-.052 1.278-.052 3.654s.01 2.71.052 3.654c.046 1.002.2 1.57.385 2.02a3.48 3.48 0 001.24 1.24c.45.184 1.018.338 2.02.385.944.043 1.278.052 3.654.052s2.71-.01 3.654-.052c1.002-.046 1.57-.2 2.02-.385a3.48 3.48 0 001.24-1.24c.184-.45.338-1.018.385-2.02.043-.944.052-1.278.052-3.654s-.01-2.71-.052-3.654c-.046-1.002-.2-1.57-.385-2.02a3.48 3.48 0 00-1.24-1.24c-.45-.184-1.018-.338-2.02-.385C15.283 3.452 14.95 3.442 12.573 3.442h.001zm0 2.923a4.634 4.634 0 100 9.268 4.634 4.634 0 000-9.268zm0 7.822a3.188 3.188 0 110-6.376 3.188 3.188 0 010 6.376z" clip-rule="evenodd" /></svg></a>
-                 </div> -->
-                <!-- Creditos DTW -->
-                <div>
-                    <figure class="cursor-pointer">
-                        <a class="flex justify-end items-center" href="https://dtw.com.mx/" target="_blank">
-                            <p class="text-white text-xl">BY</p>
-                            <img class="w-20 lg:w-[5%]" src="@/../../public/images/DTW_logo_blanco.png" alt="">
+
+                <div class="hidden items-center gap-2 lg:flex">
+                    <template v-if="currentUser">
+                        <Link :href="route('dashboard')" class="wa-btn-ghost">
+                            <span class="grid h-7 w-7 place-items-center rounded-full bg-cloud-100 text-xs font-semibold uppercase text-cloud-700">
+                                {{ firstName.charAt(0) }}
+                            </span>
+                            {{ firstName || 'Mi panel' }}
+                        </Link>
+                    </template>
+                    <template v-else>
+                        <Link :href="route('login')" class="wa-btn-ghost">Iniciar sesión</Link>
+                    </template>
+                    <Link :href="route('landing.agendar')" class="wa-btn-sage">
+                        Agendar ahora
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                        </svg>
+                    </Link>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button
+                    type="button"
+                    @click="toggleMobileMenu"
+                    class="grid h-10 w-10 place-items-center rounded-2xl border border-mist-200 bg-white/80 text-mist-700 transition hover:bg-white lg:hidden"
+                    :aria-expanded="isMobileMenuOpen"
+                    aria-label="Abrir menú"
+                >
+                    <svg v-if="!isMobileMenuOpen" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h10" />
+                    </svg>
+                    <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                </button>
+            </nav>
+
+            <!-- Mobile Menu -->
+            <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+            >
+                <div
+                    v-show="isMobileMenuOpen"
+                    class="mx-auto mt-2 max-w-7xl rounded-3xl border border-white/70 bg-white/90 p-3 shadow-lift backdrop-blur-xl lg:hidden"
+                >
+                    <Link
+                        v-for="item in navigation"
+                        :key="item.name"
+                        :href="route(item.routeName)"
+                        @click="toggleMobileMenu"
+                        class="block rounded-2xl px-4 py-3 text-sm font-medium transition-colors"
+                        :class="
+                            route().current(item.routeName)
+                                ? 'bg-mist-100 text-mist-900'
+                                : 'text-mist-600 hover:bg-mist-50'
+                        "
+                    >
+                        {{ item.name }}
+                    </Link>
+                    <div class="my-2 h-px bg-mist-200/80"></div>
+                    <div class="grid gap-2 p-1">
+                        <Link v-if="currentUser" :href="route('dashboard')" class="wa-btn-soft w-full" @click="toggleMobileMenu">
+                            {{ firstName || 'Mi panel' }}
+                        </Link>
+                        <Link v-else :href="route('login')" class="wa-btn-soft w-full" @click="toggleMobileMenu">
+                            Iniciar sesión
+                        </Link>
+                        <Link :href="route('landing.agendar')" class="wa-btn-sage w-full" @click="toggleMobileMenu">
+                            Agendar ahora
+                        </Link>
+                    </div>
+                </div>
+            </Transition>
+        </header>
+
+        <main class="pt-24 sm:pt-28">
+            <slot />
+        </main>
+
+        <!-- =========== Footer =========== -->
+        <footer class="mt-24 px-3 pb-6 sm:px-5">
+            <div
+                class="mx-auto max-w-7xl rounded-3xl border border-white/70 bg-white/70 p-8 shadow-soft backdrop-blur-md sm:p-10"
+            >
+                <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+                    <!-- Marca -->
+                    <div>
+                        <Link :href="route('landing.index')" class="inline-flex items-center">
+                            <img src="/images/logo-washapp.png" alt="WashApp · Eco Car Wash Móvil" class="h-14 w-auto" />
+                        </Link>
+                        <p class="mt-4 text-sm leading-relaxed text-mist-500">
+                            Lavado a domicilio 100% digital. Tu auto se limpia mientras tú recuperas tu tiempo.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            <span class="wa-chip">Ecológico</span>
+                            <span class="wa-chip">Cashless</span>
+                        </div>
+                    </div>
+
+                    <!-- Navegación -->
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase tracking-[0.18em] text-mist-400">Navegación</h4>
+                        <ul class="mt-4 space-y-3 text-sm text-mist-600">
+                            <li>
+                                <Link :href="route('landing.index')" class="transition hover:text-mist-900">Inicio</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.servicios')" class="transition hover:text-mist-900">Servicios</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.agendar')" class="transition hover:text-mist-900">Agendar</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.contacto')" class="transition hover:text-mist-900">Contacto</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.premios')" class="transition hover:text-mist-900">Premios</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.promociones')" class="transition hover:text-mist-900">Promociones</Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Servicios -->
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase tracking-[0.18em] text-mist-400">Servicios</h4>
+                        <ul class="mt-4 space-y-3 text-sm text-mist-600">
+                            <li>
+                                <Link :href="route('landing.servicios')" class="transition hover:text-mist-900">
+                                    Lavado ecológico en seco
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.servicios')" class="transition hover:text-mist-900">
+                                    Lavado de bajo consumo
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.servicios')" class="transition hover:text-mist-900">
+                                    Servicios adicionales
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.premios')" class="transition hover:text-mist-900">
+                                    Premios y recompensas
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('landing.index') + '#membresias'" class="transition hover:text-mist-900">
+                                    Membresías mensuales
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Soporte -->
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase tracking-[0.18em] text-mist-400">Soporte</h4>
+                        <ul class="mt-4 space-y-3 text-sm text-mist-600">
+                            <li>
+                                <a
+                                    href="https://wa.me/523312345678"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="inline-flex items-center gap-2 transition hover:text-mist-900"
+                                >
+                                    <i class="fa-brands fa-whatsapp text-sage-500"></i> WhatsApp
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="mailto:hola@washapp.mx"
+                                    class="inline-flex items-center gap-2 transition hover:text-mist-900"
+                                >
+                                    <i class="fa-regular fa-envelope text-cloud-400"></i> hola@washapp.mx
+                                </a>
+                            </li>
+                            <li>
+                                <Link
+                                    :href="route('landing.contacto') + '#incidencias'"
+                                    class="inline-flex items-center gap-2 transition hover:text-mist-900"
+                                >
+                                    <i class="fa-regular fa-circle-question text-sand-400"></i> Reportar una incidencia
+                                </Link>
+                            </li>
+                            <li class="text-xs text-mist-400">Lun a Sáb · 8:00 – 19:00 h</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div
+                    class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-mist-200/70 pt-6 text-xs text-mist-400 sm:flex-row"
+                >
+                    <p>&copy; {{ new Date().getFullYear() }} WashApp. Todos los derechos reservados.</p>
+                    <div class="flex items-center gap-4">
+                        <Link :href="route('landing.contacto')" class="transition hover:text-mist-700">Soporte</Link>
+                        <a
+                            href="https://dtw.com.mx/"
+                            target="_blank"
+                            rel="noopener"
+                            class="flex items-center gap-1.5 rounded-lg bg-cloud-700 px-2 py-1 text-white transition hover:bg-cloud-800"
+                        >
+                            <span>BY</span>
+                            <img class="h-3 w-auto" src="/images/DTW_logo_blanco.png" alt="DTW" />
                         </a>
-                    </figure>
+                    </div>
                 </div>
-
             </div>
-            <p class="text-slate-400 text-sm text-center mt-2">
-                &copy; {{ new Date().getFullYear() }} WashApp. Todos los derechos reservados.
-            </p>
-        </div>
-    </footer>
-    <!-- =========== Footer ENDS =========== -->
-
-  </div>
+        </footer>
+    </div>
 </template>
-
-<style scoped>
-.nav-link {
-    position: relative;
-    transition: color 0.3s ease;
-    padding-bottom: 8px; /* Espacio para la línea */
-}
-
-.nav-link:hover {
-    color: #38bdf8; /* text-sky-400 */
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 50%;
-    background-color: #38bdf8; /* text-sky-400 */
-    transition: all 0.3s ease-out;
-    transform: translateX(-50%);
-}
-
-.nav-link:hover::after,
-.active-nav-link::after {
-    width: 100%;
-}
-
-.active-nav-link {
-  color: #0ea5e9; /* text-sky-500 */
-  font-weight: 600;
-}
-</style>

@@ -134,6 +134,9 @@ const confirmDelete = (service) => {
                         <i class="pi pi-search" />
                         <InputText v-model="search" placeholder="Buscar por nombre" class="w-full"/>
                     </span>
+                     <Link :href="route('admin.vehicle-categories.index')">
+                        <Button label="Categorías" icon="pi pi-tags" severity="secondary" outlined />
+                    </Link>
                      <Link :href="route('admin.services.create')">
                         <Button label="Crear Servicio" icon="pi pi-plus" severity="success" />
                     </Link>
@@ -163,9 +166,20 @@ const confirmDelete = (service) => {
                                 {{ slotProps.data.duration_minutes }} min.
                             </template>
                          </Column>
-                         <Column field="type" header="Tipo" sortable>
+                         <Column field="type" header="Clasificación" sortable>
                             <template #body="slotProps">
-                                <Tag :value="slotProps.data.type" :severity="getTypeSeverity(slotProps.data.type)" />
+                                <div class="flex flex-col gap-1 items-start">
+                                    <Tag
+                                        :value="slotProps.data.is_addon ? 'Adicional' : 'Paquete'"
+                                        :severity="slotProps.data.is_addon ? 'contrast' : 'success'"
+                                    />
+                                    <Tag :value="slotProps.data.type" :severity="getTypeSeverity(slotProps.data.type)" />
+                                </div>
+                            </template>
+                         </Column>
+                         <Column field="points" header="Puntos" sortable>
+                            <template #body="slotProps">
+                                <span class="font-semibold text-amber-600">+{{ slotProps.data.points }}</span>
                             </template>
                          </Column>
                          <Column field="is_active" header="Estado" sortable>
@@ -197,8 +211,14 @@ const confirmDelete = (service) => {
                                 </div>
                             </div>
                             <div class="mt-4 flex justify-between items-center">
-                                <Tag :value="service.type" :severity="getTypeSeverity(service.type)" />
-                                <Tag :value="service.is_active ? 'Activo' : 'Inactivo'" :severity="getStatusSeverity(service.is_active)" />
+                                <div class="flex gap-2">
+                                    <Tag :value="service.is_addon ? 'Adicional' : 'Paquete'" :severity="service.is_addon ? 'contrast' : 'success'" />
+                                    <Tag :value="service.type" :severity="getTypeSeverity(service.type)" />
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-semibold text-amber-600">+{{ service.points }} pts</span>
+                                    <Tag :value="service.is_active ? 'Activo' : 'Inactivo'" :severity="getStatusSeverity(service.is_active)" />
+                                </div>
                             </div>
                         </div>
                     </div>

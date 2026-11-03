@@ -3,21 +3,26 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasMedia
 {
     use HasApiTokens;
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
+    use InteractsWithMedia;
     use Notifiable;
     use TwoFactorAuthenticatable;
 
@@ -33,6 +38,7 @@ class User extends Authenticatable
         'role', // Rol del usuario (client, employee, admin)
         'phone_number',
         'is_active',
+        'points',
     ];
 
     /**
@@ -54,6 +60,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'avatar_url',
     ];
 
     /**
@@ -67,7 +74,42 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'points' => 'integer',
         ];
+    }
+
+    /**
+     * La foto de perfil se gestiona con Spatie Media Library (colección "avatar").
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatar')->singleFile();
+    }
+
+    /**
+     * URL de la foto de perfil subida por el usuario.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        $url = $this->getFirstMediaUrl('avatar');
+
+        return $url !== '' ? $url : null;
+    }
+
+    /**
+     * Jetstream muestra `profile_photo_url`: damos prioridad a la foto de Media Library.
+     */
+    protected function profilePhotoUrl(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->avatar_url) {
+                return $this->avatar_url;
+            }
+
+            return $this->profile_photo_path
+                ? Storage::disk($this->profilePhotoDisk())->url($this->profile_photo_path)
+                : $this->defaultProfilePhotoUrl();
+        });
     }
 
     /**
@@ -92,5 +134,13 @@ class User extends Authenticatable
     public function rewards(): HasMany
     {
         return $this->hasMany(UserReward::class);
+    }
+
+    /**
+     * Vehículos registrados por el cliente.
+     */
+    public function cars(): HasMany
+    {
+        return $this->hasMany(Car::class);
     }
 }

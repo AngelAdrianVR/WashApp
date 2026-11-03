@@ -1,12 +1,9 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 
 defineProps({
     canResetPassword: Boolean,
@@ -14,117 +11,192 @@ defineProps({
 });
 
 const form = useForm({
-    email: 'cliente@gmail.com',
-    password: '321321321',
+    email: '',
+    password: '',
     remember: false,
 });
 
+const showPassword = ref(false);
+const socialNotice = ref('');
+let noticeTimer = null;
+
 const submit = () => {
-    form.transform(data => ({
+    form.transform((data) => ({
         ...data,
         remember: form.remember ? 'on' : '',
     })).post(route('login'), {
         onFinish: () => form.reset('password'),
+        onError: () => form.reset('password'),
     });
+};
+
+// Los accesos sociales aún no están habilitados: solo se muestran.
+const socialComingSoon = (provider) => {
+    socialNotice.value = `El acceso con ${provider} estará disponible muy pronto.`;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => (socialNotice.value = ''), 4000);
 };
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Iniciar sesión" />
 
     <AuthenticationCard>
         <template #logo>
             <AuthenticationCardLogo />
         </template>
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-400">
+        <div class="text-center">
+            <h1 class="text-2xl font-semibold tracking-tight text-mist-900">Bienvenido de nuevo</h1>
+            <p class="mt-2 text-sm text-mist-500">Ingresa para gestionar tus reservas y recompensas.</p>
+        </div>
+
+        <div v-if="status" class="mt-5 rounded-2xl bg-sage-50 px-4 py-3 text-sm font-medium text-sage-700">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit" class="animate-fade-in-up">
-            <!-- Email Field with Icon -->
-            <div class="relative">
-                <InputLabel for="email" value="Correo Electrónico" class="text-gray-200" />
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pt-6 pointer-events-none">
-                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        <form class="mt-7" @submit.prevent="submit">
+            <!-- Correo -->
+            <div>
+                <label for="email" class="wa-label">Correo electrónico</label>
+                <div class="relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center text-mist-400">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 7.5h17v9a2 2 0 01-2 2h-13a2 2 0 01-2-2v-9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8l8 5.5L20 8" />
+                        </svg>
+                    </span>
+                    <input
+                        id="email"
+                        v-model="form.email"
+                        type="email"
+                        class="wa-input !pl-11"
+                        placeholder="tu@correo.com"
+                        required
+                        autofocus
+                        autocomplete="username"
+                    />
                 </div>
-                <TextInput
-                    id="email"
-                    v-model="form.email"
-                    type="email"
-                    class="mt-1 block w-full pl-10 bg-gray-700/50 border-gray-600 text-gray-100 focus:border-blue-500 focus:ring-blue-500 transition-shadow duration-300 focus:shadow-lg focus:shadow-blue-500/20"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <!-- Password Field with Icon -->
-            <div class="mt-4 relative">
-                <InputLabel for="password" value="Contraseña" class="text-gray-200" />
-                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pt-6 pointer-events-none">
-                    <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" /></svg>
+            <!-- Contraseña -->
+            <div class="mt-4">
+                <label for="password" class="wa-label">Contraseña</label>
+                <div class="relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center text-mist-400">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 10V8a5 5 0 0110 0v2" />
+                            <rect x="4.5" y="10" width="15" height="10" rx="2.5" />
+                        </svg>
+                    </span>
+                    <input
+                        id="password"
+                        v-model="form.password"
+                        :type="showPassword ? 'text' : 'password'"
+                        class="wa-input !pl-11 !pr-12"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    />
+                    <button
+                        type="button"
+                        class="absolute inset-y-0 right-0 grid w-11 place-items-center text-mist-400 transition hover:text-mist-700"
+                        :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                        @click="showPassword = !showPassword"
+                    >
+                        <svg v-if="!showPassword" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4l16 16M10.6 6.1A9.6 9.6 0 0112 6c6 0 9.5 6 9.5 6a17 17 0 01-3.2 3.9M6.2 8.1A16.7 16.7 0 002.5 12S6 18 12 18a9.4 9.4 0 003.3-.6" />
+                        </svg>
+                    </button>
                 </div>
-                <TextInput
-                    id="password"
-                    v-model="form.password"
-                    type="password"
-                    class="mt-1 block w-full pl-10 bg-gray-700/50 border-gray-600 text-gray-100 focus:border-blue-500 focus:ring-blue-500 transition-shadow duration-300 focus:shadow-lg focus:shadow-blue-500/20"
-                    required
-                    autocomplete="current-password"
-                />
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="block mt-4">
-                <label class="flex items-center">
-                    <Checkbox v-model:checked="form.remember" name="remember" class="rounded border-gray-500 text-blue-500 focus:ring-blue-600" />
-                    <span class="ms-2 text-sm text-gray-700">Recuérdame</span>
+            <div class="mt-4 flex items-center justify-between gap-3">
+                <label class="flex cursor-pointer items-center gap-2 text-sm text-mist-600">
+                    <input
+                        v-model="form.remember"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-mist-300 text-cloud-600 focus:ring-cloud-300"
+                    />
+                    Recuérdame
                 </label>
-            </div>
 
-            <div class="flex items-center justify-end mt-8">
-                <Link v-if="canResetPassword" :href="route('password.request')" class="underline text-sm text-blue-800 hover:text-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-all duration-300 ease-in-out">
+                <Link
+                    v-if="canResetPassword"
+                    :href="route('password.request')"
+                    class="text-sm font-medium text-cloud-700 transition hover:text-cloud-800"
+                >
                     ¿Olvidaste tu contraseña?
                 </Link>
-
-                <PrimaryButton class="ms-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/30 transform hover:scale-105 transition-transform duration-300 animate-pulse-glow" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Iniciar Sesión
-                </PrimaryButton>
             </div>
+
+            <button
+                type="submit"
+                class="wa-btn-primary mt-6 w-full !py-3.5 text-base"
+                :class="{ 'pointer-events-none opacity-60': form.processing }"
+                :disabled="form.processing"
+            >
+                <svg v-if="form.processing" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" d="M12 3a9 9 0 109 9" />
+                </svg>
+                {{ form.processing ? 'Ingresando…' : 'Iniciar sesión' }}
+            </button>
         </form>
+
+        <!-- Separador -->
+        <div class="my-6 flex items-center gap-3">
+            <span class="h-px flex-1 bg-mist-200"></span>
+            <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-mist-400">o continúa con</span>
+            <span class="h-px flex-1 bg-mist-200"></span>
+        </div>
+
+        <!-- Accesos sociales (visuales por ahora) -->
+        <div class="grid grid-cols-2 gap-3">
+            <button
+                type="button"
+                class="flex items-center justify-center gap-2.5 rounded-2xl border border-mist-200 bg-white px-4 py-3 text-sm font-semibold text-mist-700 transition hover:border-mist-300 hover:bg-mist-50"
+                @click="socialComingSoon('Google')"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                </svg>
+                Google
+            </button>
+
+            <button
+                type="button"
+                class="flex items-center justify-center gap-2.5 rounded-2xl border border-mist-200 bg-white px-4 py-3 text-sm font-semibold text-mist-700 transition hover:border-mist-300 hover:bg-mist-50"
+                @click="socialComingSoon('Facebook')"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.34l-.53 3.49h-2.81V24C19.61 23.1 24 18.1 24 12.07z" />
+                </svg>
+                Facebook
+            </button>
+        </div>
+
+        <p
+            v-if="socialNotice"
+            class="mt-3 rounded-2xl bg-cloud-50 px-4 py-2.5 text-center text-xs font-medium text-cloud-700"
+        >
+            {{ socialNotice }}
+        </p>
+
+        <!-- Registro -->
+        <p class="mt-7 text-center text-sm text-mist-500">
+            ¿Aún no tienes cuenta?
+            <Link :href="route('register')" class="font-semibold text-cloud-700 transition hover:text-cloud-800">
+                Crear cuenta
+            </Link>
+        </p>
     </AuthenticationCard>
 </template>
-
-<style scoped>
-/* Animation for form fade-in */
-@keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-in-up {
-    animation: fade-in-up 0.7s ease-out forwards;
-}
-
-/* Animation for the button's glowing pulse effect */
-@keyframes pulse-glow {
-    0%, 100% {
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4), 0 0 12px rgba(6, 182, 212, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 25px rgba(6, 182, 212, 0.5);
-    }
-}
-
-.animate-pulse-glow {
-    animation: pulse-glow 2.5s infinite ease-in-out;
-}
-</style>
