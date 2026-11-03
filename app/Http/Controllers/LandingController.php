@@ -11,6 +11,16 @@ use Inertia\Inertia;
 class LandingController extends Controller
 {
     /**
+     * Pantalla de carga que se muestra en la raíz antes de entrar a la landing.
+     *
+     * @return \Inertia\Response
+     */
+    public function splash()
+    {
+        return Inertia::render('Landing/Splash');
+    }
+
+    /**
      * Display the landing page.
      *
      * @return \Inertia\Response

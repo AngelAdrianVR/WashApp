@@ -98,25 +98,25 @@ html {
   }
 
   .wa-btn-soft {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 border border-mist-200 bg-white/80 text-mist-700 hover:border-mist-300 hover:bg-white hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 border border-mist-200 bg-white/80 text-mist-700 hover:border-mist-300 hover:bg-white hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-white;
   }
 
   .wa-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-mist-600 transition-all duration-300 hover:bg-white/70 hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-mist-600 transition-all duration-300 hover:bg-white/70 hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
   }
 
   /* Chips / etiquetas */
   .wa-chip {
-    @apply inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-600 backdrop-blur-sm;
+    @apply inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-600 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300;
   }
 
   /* Campos de formulario */
   .wa-label {
-    @apply mb-2 block text-xs font-semibold uppercase tracking-wider text-mist-500;
+    @apply mb-2 block text-xs font-semibold uppercase tracking-wider text-mist-500 dark:text-slate-400;
   }
 
   .wa-input {
-    @apply w-full rounded-2xl border border-mist-200 bg-white/90 px-4 py-3 text-sm text-mist-800 shadow-sm transition placeholder:text-mist-400 focus:border-cloud-400 focus:ring-2 focus:ring-cloud-200;
+    @apply w-full rounded-2xl border border-mist-200 bg-white/90 px-4 py-3 text-sm text-mist-800 shadow-sm transition placeholder:text-mist-400 focus:border-cloud-400 focus:ring-2 focus:ring-cloud-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-cloud-400 dark:focus:ring-cloud-500/30;
   }
 
   /* Tarjeta seleccionable del flujo de agendado */

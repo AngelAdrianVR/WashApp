@@ -4,17 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Reward extends Model
+class Reward extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'name',
         'description',
         'points_cost',
-        'image_path',
         'is_active',
     ];
 
@@ -41,17 +41,21 @@ class Reward extends Model
     }
 
     /**
+     * La imagen del premio se gestiona con Spatie Media Library.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('image')->singleFile();
+    }
+
+    /**
      * Ruta absoluta de la imagen lista para usarse en el frontend.
      */
     public function getImageUrlAttribute(): ?string
     {
-        if (! $this->image_path) {
-            return null;
-        }
+        $url = $this->getFirstMediaUrl('image');
 
-        return Str::startsWith($this->image_path, ['http://', 'https://', '/'])
-            ? $this->image_path
-            : asset($this->image_path);
+        return $url !== '' ? $url : null;
     }
 
     /**

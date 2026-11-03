@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
     packages: { type: Array, default: () => [] },
@@ -9,6 +9,20 @@ const props = defineProps({
 });
 
 const nf = new Intl.NumberFormat('es-MX');
+
+const page = usePage();
+const isAuthenticated = computed(() => !!page.props.auth?.user);
+
+// Membresías: requieren cuenta, o se pueden acordar por WhatsApp
+const WHATSAPP_NUMBER = '523312155731';
+const whatsappLink = (message) =>
+    `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+const membershipWhatsapp = (planName) =>
+    whatsappLink(`Hola, me interesa la membresía ${planName} de WashApp. ¿Me pueden dar más información?`);
+
+const fleetWhatsapp = () =>
+    whatsappLink('Hola, quiero cotizar el servicio de lavado para una flotilla de varios vehículos.');
 
 /* ---------------------------------------------------------
    Consumo de agua: manguera tradicional vs. WashApp
@@ -707,19 +721,67 @@ const iconPaths = {
                             </li>
                         </ul>
 
-                        <Link
-                            :href="route('landing.agendar')"
-                            class="mt-7 w-full"
-                            :class="plan.popular ? 'wa-btn-sage' : 'wa-btn-soft'"
-                        >
-                            {{ plan.popular ? 'Suscribirme' : 'Ver disponibilidad' }}
-                        </Link>
+                        <div class="mt-7 space-y-2">
+                            <Link
+                                :href="isAuthenticated ? route('dashboard') : route('login')"
+                                class="w-full"
+                                :class="plan.popular ? 'wa-btn-sage' : 'wa-btn-primary'"
+                            >
+                                <i class="fa-solid fa-lock text-xs opacity-80"></i>
+                                {{ isAuthenticated ? 'Gestionar mi plan' : 'Suscribirme' }}
+                            </Link>
+                            <a
+                                :href="membershipWhatsapp(plan.name)"
+                                target="_blank"
+                                rel="noopener"
+                                class="wa-btn-soft w-full"
+                                :class="plan.popular ? '!border-white/25 !bg-white/10 !text-white hover:!bg-white/20' : ''"
+                            >
+                                <i class="fa-brands fa-whatsapp"></i>
+                                Acordar por WhatsApp
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 <p class="mt-6 text-center text-xs text-mist-400" data-reveal>
-                    Sin plazos forzosos · Se cancela desde tu perfil · Pago automático con tarjeta o transferencia
+                    Las membresías requieren una cuenta WashApp · Sin plazos forzosos · Se cancela desde tu perfil
                 </p>
+
+                <!-- Flotillas -->
+                <div class="mt-6 grid gap-6 rounded-3xl border border-mist-200/80 bg-white/70 p-7 shadow-soft backdrop-blur-md sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center" data-reveal>
+                    <div>
+                        <span class="wa-eyebrow">
+                            <i class="fa-solid fa-truck-fast"></i> Flotillas y empresas
+                        </span>
+                        <h3 class="wa-title mt-3 text-xl sm:text-2xl">¿Tienes varios autos? Armamos un plan a tu medida</h3>
+                        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-mist-500">
+                            Desde 3 vehículos: precio por volumen, facturación mensual consolidada y un solo punto de
+                            contacto para toda tu flotilla.
+                        </p>
+                        <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-mist-600">
+                            <li class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-check text-sage-500"></i> Precio por volumen
+                            </li>
+                            <li class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-check text-sage-500"></i> Factura mensual
+                            </li>
+                            <li class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-check text-sage-500"></i> Reportes por unidad
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                        <a :href="fleetWhatsapp()" target="_blank" rel="noopener" class="wa-btn-sage whitespace-nowrap">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            Cotizar por WhatsApp
+                        </a>
+                        <Link :href="route('landing.contacto')" class="wa-btn-soft whitespace-nowrap">
+                            Escribir al equipo
+                        </Link>
+                    </div>
+                </div>
             </div>
         </section>
 

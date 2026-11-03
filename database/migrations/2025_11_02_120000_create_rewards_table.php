@@ -19,8 +19,7 @@ return new class extends Migration
             $table->text('description');
             // Puntos que debe tener el usuario para canjearlo
             $table->unsignedInteger('points_cost');
-            // Ruta pública de la imagen del premio
-            $table->string('image_path')->nullable();
+            // La imagen del premio se gestiona con Spatie Media Library (colección "image")
             // Permite ocultar premios sin eliminarlos
             $table->boolean('is_active')->default(true);
             $table->timestamps();
