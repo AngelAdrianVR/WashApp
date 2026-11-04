@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, reactive, watch } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const props = defineProps({
     serviceId: { type: [String, Number], default: null },
@@ -17,20 +18,27 @@ const nf = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 /* =========================================================
    Catálogo (viene de la base de datos)
    ========================================================= */
-const timeBlocks = ['08:00 – 10:00', '10:00 – 12:00', '12:00 – 14:00', '14:00 – 16:00', '16:00 – 18:00'];
-
 const steps = [
-    { id: 1, label: 'Vehículo' },
-    { id: 2, label: 'Dirección' },
-    { id: 3, label: 'Servicio' },
-    { id: 4, label: 'Horario' },
-    { id: 5, label: 'Pago' },
+    { id: 1, label: 'Datos' },
+    { id: 2, label: 'Vehículo' },
+    { id: 3, label: 'Dirección' },
+    { id: 4, label: 'Servicio' },
+    { id: 5, label: 'Horario' },
+    { id: 6, label: 'Pago' },
 ];
 
 const typeMeta = {
     Seco: { water: '0 L de agua', tone: 'sage' },
     Agua: { water: '≈ 15 L de agua', tone: 'cloud' },
 };
+
+const mexicanStates = [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua',
+    'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Guanajuato', 'Guerrero', 'Hidalgo',
+    'Jalisco', 'México', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla',
+    'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas',
+    'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas',
+];
 
 const categoryIcons = {
     hatchback: 'M4 13l1.6-4.2A2 2 0 017.5 7.5h9A2 2 0 0118.4 8.8L20 13v5h-3v-1H7v1H4v-5z|M7 13h10',
@@ -55,13 +63,20 @@ const initialAddons = props.addons.some((addon) => String(addon.id) === String(p
 /* =========================================================
    Estado del formulario
    ========================================================= */
+const page = usePage();
+const authUser = computed(() => page.props.auth?.user ?? null);
+const confirmation = computed(() => page.props.flash?.booking ?? null);
+
 const currentStep = ref(1);
-const isConfirmed = ref(false);
 const isProcessing = ref(false);
-const folio = ref('');
-const confirmedAt = ref('');
+const dismissedConfirmation = ref(false);
+const submitError = ref('');
 
 const form = reactive({
+    name: authUser.value?.name ?? '',
+    phone: authUser.value?.phone_number ?? '',
+    email: authUser.value?.email ?? '',
+
     brand: '',
     model: '',
     categoryId: initialCategory?.id ?? null,
@@ -70,7 +85,8 @@ const form = reactive({
     number: '',
     colonia: '',
     postalCode: '',
-    city: '',
+    city: 'Guadalajara',
+    state: 'Jalisco',
     references: '',
     gps: null,
 
@@ -79,12 +95,21 @@ const form = reactive({
 
     date: '',
     block: '',
+    paymentMethod: 'Tarjeta',
 
     cardName: '',
     cardNumber: '',
     cardExpiry: '',
     cardCvv: '',
 });
+
+const isConfirmed = computed(() => !!confirmation.value && !dismissedConfirmation.value);
+const folio = computed(() => (confirmation.value ? `WA-${String(confirmation.value.id).padStart(5, '0')}` : ''));
+const confirmedAt = computed(() =>
+    confirmation.value
+        ? `${confirmation.value.date_label} · ${confirmation.value.time_label}`
+        : ''
+);
 
 /* =========================================================
    Cálculos dinámicos
@@ -136,11 +161,7 @@ const startOfToday = () => {
     return today;
 };
 
-const firstBookableDay = () => {
-    const tomorrow = startOfToday();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow;
-};
+const firstBookableDay = () => startOfToday();
 
 const toIsoDate = (date) =>
     [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
@@ -203,22 +224,45 @@ const selectDay = (day) => {
     form.block = '';
 };
 
-// La disponibilidad es estable por día: se deriva un hash simple de fecha y bloque.
-const isBlockAvailable = (block) => {
-    if (!form.date) return true;
+// Horarios reales: bloques de 1 hora según disponibilidad de empleados.
+const availableSlots = ref([]);
+const isLoadingSlots = ref(false);
 
-    const seed = `${form.date}${block}`;
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-        hash = (hash * 31 + seed.charCodeAt(i)) % 9973;
+const fetchSlots = async () => {
+    if (!form.date || !totalMinutes.value) {
+        availableSlots.value = [];
+        return;
     }
 
-    return hash % 5 !== 0;
+    isLoadingSlots.value = true;
+
+    try {
+        const { data } = await axios.post(route('landing.agendar.times'), {
+            date: form.date,
+            duration: totalMinutes.value,
+        });
+        availableSlots.value = Array.isArray(data) ? data : [];
+    } catch {
+        availableSlots.value = [];
+    } finally {
+        isLoadingSlots.value = false;
+    }
 };
 
-const selectBlock = (block) => {
-    if (!isBlockAvailable(block)) return;
-    form.block = block;
+watch([() => form.date, () => totalMinutes.value], () => {
+    form.block = '';
+    fetchSlots();
+});
+
+const selectSlot = (slot) => {
+    form.block = slot;
+};
+
+const slotEnd = (slot) => {
+    const [hours, minutes] = slot.split(':').map(Number);
+    const end = new Date();
+    end.setHours(hours, minutes + 60, 0, 0);
+    return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
 };
 
 const formattedDate = computed(() => {
@@ -287,18 +331,6 @@ const fullAddress = computed(() =>
 /* =========================================================
    Pago (modo de prueba, sin pasarela real)
    ========================================================= */
-const cardDigits = computed(() => form.cardNumber.replace(/\D/g, ''));
-
-const isPaymentValid = computed(() => {
-    const expiryOk = /^\d{2}\/\d{2}$/.test(form.cardExpiry);
-    return (
-        form.cardName.trim().length > 3 &&
-        cardDigits.value.length >= 15 &&
-        expiryOk &&
-        /^\d{3,4}$/.test(form.cardCvv)
-    );
-});
-
 const onCardNumberInput = (event) => {
     const digits = event.target.value.replace(/\D/g, '').slice(0, 16);
     form.cardNumber = digits.replace(/(.{4})/g, '$1 ').trim();
@@ -322,21 +354,25 @@ const onCvvInput = (event) => {
 const canContinue = computed(() => {
     switch (currentStep.value) {
         case 1:
-            return form.brand.trim().length > 1 && form.model.trim().length > 0 && !!form.categoryId;
+            if (authUser.value) return true;
+            return form.name.trim().length > 2 && form.phone.replace(/\D/g, '').length >= 10;
         case 2:
+            return form.brand.trim().length > 1 && form.model.trim().length > 0 && !!form.categoryId;
+        case 3:
             return (
                 form.street.trim().length > 2 &&
                 form.number.trim().length > 0 &&
                 form.colonia.trim().length > 2 &&
                 /^\d{5}$/.test(form.postalCode) &&
-                form.city.trim().length > 2
+                form.city.trim().length > 2 &&
+                !!form.state
             );
-        case 3:
-            return !!form.packageId;
         case 4:
-            return !!form.date && !!form.block;
+            return !!form.packageId;
         case 5:
-            return isPaymentValid.value;
+            return !!form.date && !!form.block;
+        case 6:
+            return true;
         default:
             return false;
     }
@@ -369,33 +405,56 @@ const toggleAddon = (addon) => {
     }
 };
 
+const servicesPayload = computed(() => {
+    const ids = [form.packageId, ...form.addons].filter(Boolean);
+    return [...new Set(ids)];
+});
+
 const confirmBooking = () => {
     if (!canContinue.value || isProcessing.value) return;
 
+    submitError.value = '';
     isProcessing.value = true;
 
-    // Pago simulado: no hay pasarela conectada todavía.
-    setTimeout(() => {
-        isProcessing.value = false;
-        isConfirmed.value = true;
-        folio.value = `WA-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-        confirmedAt.value = new Intl.DateTimeFormat('es-MX', {
-            dateStyle: 'long',
-            timeStyle: 'short',
-        }).format(new Date());
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1600);
+    router.post(
+        route('landing.agendar.store'),
+        {
+            name: form.name,
+            phone: form.phone,
+            email: form.email,
+            services: servicesPayload.value,
+            vehicle_category_id: form.categoryId,
+            vehicle_brand: form.brand,
+            vehicle_model: form.model,
+            scheduled_at: `${form.date} ${form.block}`,
+            street: form.street,
+            street_number: form.number,
+            neighborhood: form.colonia,
+            postal_code: form.postalCode,
+            city: form.city,
+            state: form.state,
+            latitude: form.gps?.lat ?? null,
+            longitude: form.gps?.lng ?? null,
+            notes: form.references ? `Referencias: ${form.references}` : null,
+            payment_method: form.paymentMethod,
+        },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                isProcessing.value = false;
+            },
+            onError: (errors) => {
+                submitError.value = Object.values(errors)[0] || 'Revisa los datos obligatorios.';
+            },
+            onSuccess: () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+        }
+    );
 };
 
-watch(
-    () => currentStep.value,
-    () => {
-        if (isConfirmed.value) isConfirmed.value = false;
-    }
-);
-
 const resetBooking = () => {
-    isConfirmed.value = false;
+    dismissedConfirmation.value = true;
     currentStep.value = 1;
     form.date = '';
     form.block = '';
@@ -403,6 +462,7 @@ const resetBooking = () => {
     form.cardNumber = '';
     form.cardExpiry = '';
     form.cardCvv = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 </script>
 
@@ -414,10 +474,10 @@ const resetBooking = () => {
                 <header v-if="!isConfirmed" class="pt-6 text-center sm:pt-8" data-reveal>
                     <span class="wa-eyebrow">Agendar</span>
                     <h1 class="wa-title mx-auto mt-5 max-w-3xl text-3xl leading-tight sm:text-4xl lg:text-5xl">
-                        Reserva tu lavado en 5 pasos
+                        Reserva tu lavado en 6 pasos
                     </h1>
                     <p class="mx-auto mt-4 max-w-xl text-sm text-mist-500 sm:text-base">
-                        Menos de 2 minutos. El pago es por adelantado y lo procesamos en modo de prueba.
+                        Menos de 2 minutos. Tu reserva se guarda al confirmar; el pago con tarjeta está en modo de prueba.
                     </p>
                 </header>
 
@@ -438,42 +498,30 @@ const resetBooking = () => {
                                 </p>
                             </div>
 
-                            <div class="grid gap-6 p-7 sm:grid-cols-2 sm:p-9">
+                            <div v-if="confirmation" class="grid gap-6 p-7 sm:grid-cols-2 sm:p-9">
                                 <div>
                                     <p class="wa-label">Servicio</p>
-                                    <p class="text-sm font-semibold text-mist-900">{{ selectedPackage?.name }}</p>
-                                    <p class="mt-1 text-sm text-mist-500">
-                                        {{ form.brand }} {{ form.model }} · {{ selectedCategory?.name }}
-                                    </p>
+                                    <p class="text-sm font-semibold text-mist-900">{{ confirmation.services.join(' + ') }}</p>
+                                    <p class="mt-1 text-sm text-mist-500">{{ confirmation.vehicle || 'Vehículo registrado' }}</p>
                                 </div>
                                 <div>
-                                    <p class="wa-label">Fecha y bloque</p>
-                                    <p class="text-sm font-semibold first-letter:uppercase text-mist-900">{{ formattedDate }}</p>
-                                    <p class="mt-1 text-sm text-mist-500">{{ form.block }} · {{ totalDurationLabel }}</p>
+                                    <p class="wa-label">Fecha y horario</p>
+                                    <p class="text-sm font-semibold capitalize text-mist-900">{{ confirmation.date_label }}</p>
+                                    <p class="mt-1 text-sm text-mist-500">
+                                        {{ confirmation.time_label }} · {{ confirmation.duration_minutes }} min
+                                    </p>
                                 </div>
                                 <div>
                                     <p class="wa-label">Dirección</p>
-                                    <p class="text-sm font-semibold text-mist-900">{{ form.street }} {{ form.number }}</p>
-                                    <p class="mt-1 text-sm text-mist-500">
-                                        {{ form.colonia }}, {{ form.city }} · CP {{ form.postalCode }}
-                                    </p>
-                                    <p v-if="form.references" class="mt-1 text-xs text-mist-400">{{ form.references }}</p>
+                                    <p class="text-sm font-semibold text-mist-900">{{ confirmation.address }}</p>
+                                    <p class="mt-1 text-sm text-mist-500">Cliente: {{ confirmation.customer_name }}</p>
                                 </div>
                                 <div>
-                                    <p class="wa-label">Total pagado</p>
-                                    <p class="text-2xl font-semibold text-mist-900">${{ nf.format(total) }} MXN</p>
+                                    <p class="wa-label">Total</p>
+                                    <p class="text-2xl font-semibold text-mist-900">${{ nf.format(confirmation.total) }} MXN</p>
                                     <p class="mt-1 text-xs text-mist-400">
-                                        Pago de prueba aprobado · Ganaste <span class="font-semibold text-sage-600">+{{ nf.format(pointsEarned) }} pts</span>
+                                        Pago {{ confirmation.payment_method || 'pendiente' }} · reserva guardada
                                     </p>
-                                </div>
-                            </div>
-
-                            <div v-if="selectedAddons.length" class="border-t border-mist-200/70 px-7 pb-6 sm:px-9">
-                                <p class="wa-label pt-5">Adicionales incluidos</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span v-for="addon in selectedAddons" :key="addon.id" class="wa-chip">
-                                        {{ addon.name }}
-                                    </span>
                                 </div>
                             </div>
 
@@ -505,7 +553,7 @@ const resetBooking = () => {
 
                         <p class="mt-4 text-center text-xs text-mist-400">
                             <i class="fa-solid fa-flask mr-1"></i>
-                            Demostración: el pago no se procesa con ninguna pasarela real.
+                            Tu reserva ya quedó guardada. El cobro con tarjeta estará disponible próximamente.
                         </p>
                     </div>
                 </section>
@@ -555,8 +603,64 @@ const resetBooking = () => {
                     <div class="mt-6 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
                         <!-- Panel del paso -->
                         <div class="wa-card p-6 sm:p-8">
-                            <!-- PASO 1: VEHÍCULO -->
+                            <!-- PASO 1: DATOS -->
                             <div v-if="currentStep === 1">
+                                <h2 class="text-xl font-semibold text-mist-900">¿Quién solicita el servicio?</h2>
+                                <p class="mt-1 text-sm text-mist-500">
+                                    Si nadie ha iniciado sesión, necesitamos el nombre y teléfono de contacto.
+                                </p>
+
+                                <div v-if="authUser" class="mt-6 rounded-2xl border border-sage-200 bg-sage-50/70 p-5">
+                                    <div class="flex items-center gap-3">
+                                        <span class="grid h-11 w-11 place-items-center rounded-2xl bg-sage-500 text-sm font-semibold text-white">
+                                            {{ authUser.name?.charAt(0)?.toUpperCase() }}
+                                        </span>
+                                        <div>
+                                            <p class="text-[10px] uppercase tracking-wider text-sage-700/70">Reservando como</p>
+                                            <p class="text-sm font-semibold text-mist-900">{{ authUser.name }}</p>
+                                            <p class="text-xs text-mist-500">
+                                                {{ authUser.email }}
+                                                <span v-if="authUser.phone_number"> · {{ authUser.phone_number }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p class="mt-3 text-xs text-sage-700/80">
+                                        La reserva se guardará a tu nombre automáticamente.
+                                    </p>
+                                </div>
+
+                                <div v-else class="mt-6 grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="customerName" class="wa-label">Nombre completo *</label>
+                                        <input id="customerName" v-model="form.name" type="text" class="wa-input" placeholder="Ej. Ana Martínez" autocomplete="name" />
+                                    </div>
+                                    <div>
+                                        <label for="customerPhone" class="wa-label">Teléfono *</label>
+                                        <input
+                                            id="customerPhone"
+                                            v-model="form.phone"
+                                            type="tel"
+                                            inputmode="tel"
+                                            class="wa-input"
+                                            placeholder="33 1234 5678"
+                                            autocomplete="tel"
+                                            @input="form.phone = $event.target.value.replace(/[^\d\s-]/g, '').slice(0, 20)"
+                                        />
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label for="customerEmail" class="wa-label">Correo electrónico (opcional)</label>
+                                        <input id="customerEmail" v-model="form.email" type="email" class="wa-input" placeholder="tu@correo.com" autocomplete="email" />
+                                    </div>
+                                    <p class="text-xs text-mist-400 sm:col-span-2">
+                                        ¿Ya tienes cuenta?
+                                        <Link :href="route('login')" class="font-semibold text-cloud-600 hover:underline">Inicia sesión</Link>
+                                        para que la reserva quede a tu nombre.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- PASO 2: VEHÍCULO -->
+                            <div v-else-if="currentStep === 2">
                                 <h2 class="text-xl font-semibold text-mist-900">¿Qué vehículo vamos a cuidar?</h2>
                                 <p class="mt-1 text-sm text-mist-500">Usamos la categoría para calcular precio y tiempo.</p>
 
@@ -612,8 +716,8 @@ const resetBooking = () => {
                                 </div>
                             </div>
 
-                            <!-- PASO 2: DIRECCIÓN -->
-                            <div v-else-if="currentStep === 2">
+                            <!-- PASO 3: DIRECCIÓN -->
+                            <div v-else-if="currentStep === 3">
                                 <h2 class="text-xl font-semibold text-mist-900">¿Dónde lavamos tu auto?</h2>
                                 <p class="mt-1 text-sm text-mist-500">
                                     Necesitamos la dirección exacta para que el operador llegue sin contratiempos.
@@ -677,9 +781,15 @@ const resetBooking = () => {
                                         />
                                     </div>
 
-                                    <div class="sm:col-span-6">
-                                        <label for="city" class="wa-label">Ciudad y estado *</label>
-                                        <input id="city" v-model="form.city" type="text" class="wa-input" placeholder="Guadalajara, Jalisco" />
+                                    <div class="sm:col-span-3">
+                                        <label for="city" class="wa-label">Ciudad / municipio *</label>
+                                        <input id="city" v-model="form.city" type="text" class="wa-input" placeholder="Guadalajara" />
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label for="state" class="wa-label">Estado *</label>
+                                        <select id="state" v-model="form.state" class="wa-input">
+                                            <option v-for="state in mexicanStates" :key="state" :value="state">{{ state }}</option>
+                                        </select>
                                     </div>
 
                                     <div class="sm:col-span-6">
@@ -689,13 +799,13 @@ const resetBooking = () => {
                                 </div>
 
                                 <p class="mt-4 rounded-2xl bg-mist-50 p-4 text-xs leading-relaxed text-mist-500">
-                                    Cubrimos la zona metropolitana. Si tu dirección queda fuera del área, te
-                                    contactamos antes de confirmar para ajustar la ruta.
+                                    Cubrimos la zona metropolitana de Guadalajara, Jalisco. Si tu dirección queda fuera
+                                    del área, te contactamos antes de confirmar para ajustar la ruta.
                                 </p>
                             </div>
 
-                            <!-- PASO 3: MODALIDAD + ADICIONALES -->
-                            <div v-else-if="currentStep === 3">
+                            <!-- PASO 4: MODALIDAD + ADICIONALES -->
+                            <div v-else-if="currentStep === 4">
                                 <h2 class="text-xl font-semibold text-mist-900">Modalidad y adicionales</h2>
                                 <p class="mt-1 text-sm text-mist-500">Elige el tipo de lavado y súmale lo que necesites.</p>
 
@@ -763,11 +873,11 @@ const resetBooking = () => {
                                 </div>
                             </div>
 
-                            <!-- PASO 4: FECHA Y BLOQUE -->
-                            <div v-else-if="currentStep === 4">
-                                <h2 class="text-xl font-semibold text-mist-900">Fecha y bloque horario</h2>
+                            <!-- PASO 5: FECHA Y HORARIO -->
+                            <div v-else-if="currentStep === 5">
+                                <h2 class="text-xl font-semibold text-mist-900">Fecha y horario</h2>
                                 <p class="mt-1 text-sm text-mist-500">
-                                    Elige el bloque de inicio de 2 horas. La duración estimada de tu servicio es
+                                    Elige un inicio en intervalos de 1 hora. La duración estimada de tu servicio es
                                     {{ totalDurationLabel }}.
                                 </p>
 
@@ -828,50 +938,64 @@ const resetBooking = () => {
                                 </div>
 
                                 <div class="mt-6">
-                                    <p class="wa-label">Bloque disponible</p>
+                                    <p class="wa-label">Horario disponible</p>
                                     <div v-if="!form.date" class="rounded-2xl border border-dashed border-mist-200 bg-mist-50/60 p-6 text-center text-sm text-mist-400">
-                                        Selecciona un día para ver los bloques disponibles.
+                                        Selecciona un día para ver los horarios disponibles.
                                     </div>
-                                    <div v-else class="grid gap-2 sm:grid-cols-2">
+                                    <div v-else-if="isLoadingSlots" class="rounded-2xl border border-dashed border-mist-200 bg-mist-50/60 p-6 text-center text-sm text-mist-400">
+                                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>Consultando horarios…
+                                    </div>
+                                    <div v-else-if="availableSlots.length" class="grid gap-2 sm:grid-cols-2">
                                         <button
-                                            v-for="block in timeBlocks"
-                                            :key="block"
+                                            v-for="slot in availableSlots"
+                                            :key="slot"
                                             type="button"
-                                            :disabled="!isBlockAvailable(block)"
                                             class="flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-all duration-300"
-                                            :class="[
-                                                form.block === block
+                                            :class="
+                                                form.block === slot
                                                     ? 'border-sage-400 bg-sage-50 text-sage-800 shadow-soft ring-2 ring-sage-200'
-                                                    : 'border-mist-200 bg-white/70 text-mist-600 hover:border-cloud-300 hover:bg-white',
-                                                !isBlockAvailable(block) ? 'cursor-not-allowed opacity-45 hover:border-mist-200 hover:bg-white/70' : '',
-                                            ]"
-                                            @click="selectBlock(block)"
+                                                    : 'border-mist-200 bg-white/70 text-mist-600 hover:border-cloud-300 hover:bg-white'
+                                            "
+                                            @click="selectSlot(slot)"
                                         >
-                                            <span class="font-medium">{{ block }}</span>
-                                            <span class="text-[10px] uppercase tracking-wider">
-                                                {{ isBlockAvailable(block) ? 'Disponible' : 'Ocupado' }}
-                                            </span>
+                                            <span class="font-medium">{{ slot }} – {{ slotEnd(slot) }}</span>
+                                            <span class="text-[10px] uppercase tracking-wider">1 h</span>
                                         </button>
+                                    </div>
+                                    <div v-else class="rounded-2xl border border-dashed border-mist-200 bg-mist-50/60 p-6 text-center text-sm text-mist-500">
+                                        No hay horarios disponibles para este día. Prueba con otra fecha.
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- PASO 5: PAGO -->
-                            <div v-else-if="currentStep === 5">
+                            <!-- PASO 6: PAGO -->
+                            <div v-else-if="currentStep === 6">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <h2 class="text-xl font-semibold text-mist-900">Pago por adelantado</h2>
+                                    <h2 class="text-xl font-semibold text-mist-900">Pago</h2>
                                     <span class="wa-chip !px-2.5 !py-0.5 !text-[10px]">
                                         <i class="fa-solid fa-flask text-cloud-500"></i> Modo de prueba
                                     </span>
                                 </div>
                                 <p class="mt-1 text-sm text-mist-500">
-                                    El cobro se realiza ahora para garantizar tu bloque. No hay pasarela conectada:
-                                    los datos no se envían a ningún procesador.
+                                    La reserva se guarda aunque el cobro con tarjeta aún no se procese. Puedes pagar al operador.
                                 </p>
 
-                                <div class="mt-6 grid gap-4">
+                                <div class="mt-5 grid gap-2 sm:grid-cols-3">
+                                    <button
+                                        v-for="method in ['Efectivo', 'Tarjeta', 'Transferencia']"
+                                        :key="method"
+                                        type="button"
+                                        class="wa-option justify-center !py-2.5 text-sm font-semibold"
+                                        :class="{ 'wa-option-active': form.paymentMethod === method }"
+                                        @click="form.paymentMethod = method"
+                                    >
+                                        {{ method }}
+                                    </button>
+                                </div>
+
+                                <div v-if="form.paymentMethod === 'Tarjeta'" class="mt-6 grid gap-4">
                                     <div>
-                                        <label for="cardName" class="wa-label">Nombre en la tarjeta</label>
+                                        <label for="cardName" class="wa-label">Nombre en la tarjeta (opcional)</label>
                                         <input id="cardName" v-model="form.cardName" type="text" class="wa-input" placeholder="Como aparece en la tarjeta" autocomplete="cc-name" />
                                     </div>
                                     <div>
@@ -926,10 +1050,14 @@ const resetBooking = () => {
 
                                 <p class="mt-5 rounded-2xl bg-mist-50 p-4 text-xs leading-relaxed text-mist-500">
                                     <i class="fa-solid fa-shield-halved mr-1 text-sage-500"></i>
-                                    Ambiente de pruebas: puedes usar cualquier tarjeta con 16 dígitos, por ejemplo
-                                    4242 4242 4242 4242.
+                                    Los datos de tarjeta son opcionales por ahora. Tu reserva se guarda aunque el cobro
+                                    todavía no se procese.
                                 </p>
                             </div>
+
+                            <p v-if="submitError" class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                <i class="fa-solid fa-circle-exclamation mr-1"></i>{{ submitError }}
+                            </p>
 
                             <!-- Navegación -->
                             <div class="mt-8 flex items-center justify-between gap-3 border-t border-mist-200/70 pt-6">
@@ -944,7 +1072,7 @@ const resetBooking = () => {
                                 </button>
 
                                 <button
-                                    v-if="currentStep < 5"
+                                    v-if="currentStep < steps.length"
                                     type="button"
                                     class="wa-btn-primary"
                                     :class="{ 'pointer-events-none opacity-50': !canContinue }"
@@ -968,7 +1096,7 @@ const resetBooking = () => {
                                     <svg v-if="isProcessing" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" d="M12 3a9 9 0 109 9" />
                                     </svg>
-                                    {{ isProcessing ? 'Procesando…' : `Pagar $${nf.format(total)}` }}
+                                    {{ isProcessing ? 'Guardando…' : `Confirmar reserva · $${nf.format(total)}` }}
                                 </button>
                             </div>
                         </div>
@@ -978,7 +1106,7 @@ const resetBooking = () => {
                             <div class="wa-panel p-6">
                                 <div class="flex items-center justify-between">
                                     <h3 class="text-sm font-semibold uppercase tracking-[0.18em] text-mist-400">Resumen</h3>
-                                    <span class="text-[10px] uppercase tracking-wider text-mist-400">{{ currentStep }}/5</span>
+                                    <span class="text-[10px] uppercase tracking-wider text-mist-400">{{ currentStep }}/{{ steps.length }}</span>
                                 </div>
 
                                 <dl class="mt-5 space-y-3 text-sm">

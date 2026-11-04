@@ -137,6 +137,14 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Notificaciones internas del panel.
+     */
+    public function userNotifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    /**
      * Vehículos registrados por el cliente.
      */
     public function cars(): HasMany

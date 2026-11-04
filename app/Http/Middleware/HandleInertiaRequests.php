@@ -37,7 +37,32 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'booking' => fn () => $request->session()->get('booking'),
+            ],
+            'notifications' => fn () => $request->user()
+                ? $request->user()
+                    ->userNotifications()
+                    ->orderByDesc('created_at')
+                    ->limit(20)
+                    ->get()
+                    ->map(fn ($notification) => [
+                        'id' => $notification->id,
+                        'icon' => $notification->icon,
+                        'tone' => $notification->tone,
+                        'title' => $notification->title,
+                        'text' => $notification->text,
+                        'url' => $notification->url,
+                        'read' => $notification->read_at !== null,
+                        'time' => $notification->created_at?->locale('es')->diffForHumans(),
+                    ])
+                    ->values()
+                : [],
+            'unreadNotifications' => fn () => $request->user()
+                ? $request->user()->userNotifications()->whereNull('read_at')->count()
+                : 0,
         ];
     }
 }

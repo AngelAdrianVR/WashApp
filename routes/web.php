@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminExpenseController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\ClientProfileController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\SalesAnalyticsController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
@@ -24,6 +29,8 @@ Route::get('/', [LandingController::class, 'splash'])->name('splash');
 Route::get('/inicio', [LandingController::class, 'index'])->name('landing.index');
 Route::get('/servicios', [LandingController::class, 'services'])->name('landing.servicios');
 Route::get('/agendar', [LandingController::class, 'appointment'])->name('landing.agendar');
+Route::post('/agendar', [BookingController::class, 'storePublic'])->name('landing.agendar.store');
+Route::post('/agendar/horarios', [BookingController::class, 'publicAvailableTimes'])->name('landing.agendar.times');
 Route::get('/promociones', [LandingController::class, 'promotions'])->name('landing.promociones');
 Route::get('/premios', [LandingController::class, 'rewards'])->name('landing.premios');
 Route::get('/contacto', [LandingController::class, 'contact'])->name('landing.contacto');
@@ -49,10 +56,7 @@ Route::middleware([
             $user = Auth::user();
 
             if ($user->role === 'Admin') {
-                // Logic and data for the Admin dashboard
-                return Inertia::render('Admin/Dashboard', [
-                    // Pass admin-specific data here
-                ]);
+                return app(AdminDashboardController::class)->index();
             } 
             
             if ($user->role === 'Empleado') {
@@ -101,6 +105,23 @@ Route::middleware([
 
     // --- Rutas para Administradores ---
     Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(function () {
+        // DASHBOARD ----------------------------
+        // --------------------------------------
+        Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // ANALÍTICA DE VISITAS -----------------
+        // --------------------------------------
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+        // ANÁLISIS DE VENTAS -------------------
+        // --------------------------------------
+        Route::get('sales', [SalesAnalyticsController::class, 'index'])->name('sales.index');
+
+        // GASTOS -------------------------------
+        // --------------------------------------
+        Route::resource('expenses', AdminExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
+
+
         // USUARIOS -----------------------------
         // --------------------------------------
         Route::resource('users', UserController::class);
@@ -194,6 +215,17 @@ Route::middleware([
         Route::delete('cars/{car}', [CarController::class, 'destroy'])->name('cars.destroy');
         Route::post('cars/{car}/photos', [CarController::class, 'storePhoto'])->name('cars.photos.store');
         Route::delete('cars/{car}/photos/{media}', [CarController::class, 'destroyPhoto'])->name('cars.photos.destroy');
+    });
+
+
+    // NOTIFICACIONES ---------------------------
+    // --------------------------------------
+    Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
+        Route::post('read-all', [NotificationController::class, 'markAll'])->name('markAll');
+        Route::post('read-many', [NotificationController::class, 'markMany'])->name('readMany');
+        Route::post('delete-many', [NotificationController::class, 'destroyMany'])->name('destroyMany');
+        Route::patch('{notification}/read', [NotificationController::class, 'markRead'])->name('read');
+        Route::delete('{notification}', [NotificationController::class, 'destroy'])->name('destroy');
     });
 
 

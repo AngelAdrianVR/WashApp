@@ -60,10 +60,22 @@ const menuItems = computed(() => [
         visible: hasRole('Empleado') || hasRole('Admin'),
     },
     {
-        label: 'Agenda del día',
-        icon: 'pi pi-calendar',
+        label: 'Servicios agendados',
+        icon: 'pi pi-bookmark',
+        route: 'admin.bookings.index',
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Agendar cita',
+        icon: 'pi pi-calendar-plus',
+        route: 'admin.bookings.create',
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Mis servicios',
+        icon: 'pi pi-briefcase',
         route: 'employee.bookings.index',
-        visible: hasRole('Empleado') || hasRole('Admin'),
+        visible: hasRole('Empleado'),
     },
     {
         label: 'Administración',
@@ -71,9 +83,15 @@ const menuItems = computed(() => [
         visible: hasRole('Admin'),
     },
     {
-        label: 'Reservas',
-        icon: 'pi pi-bookmark',
-        route: 'admin.bookings.index',
+        label: 'Analítica de vistas',
+        icon: 'pi pi-chart-line',
+        route: 'admin.analytics.index',
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Análisis de ventas',
+        icon: 'pi pi-chart-bar',
+        route: 'admin.sales.index',
         visible: hasRole('Admin'),
     },
     {
@@ -86,6 +104,12 @@ const menuItems = computed(() => [
         label: 'Promociones',
         icon: 'pi pi-tags',
         route: 'admin.promotions.index',
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Gastos',
+        icon: 'pi pi-wallet',
+        route: 'admin.expenses.index',
         visible: hasRole('Admin'),
     },
     {
@@ -104,40 +128,24 @@ const logout = () => router.post(route('logout'));
 <template>
     <div class="flex h-full flex-col">
         <!-- Marca -->
-        <div class="flex items-center gap-2 px-4 pb-4 pt-5" :class="collapsed && !mobile ? 'justify-center' : 'justify-between'">
-            <Link :href="route('dashboard')" class="flex min-w-0 items-center gap-2" aria-label="WashApp · Panel">
+        <div
+            class="relative flex items-center justify-center pb-3 pt-6 transition-all duration-300"
+            :class="collapsed && !mobile ? 'px-2' : 'px-4'"
+        >
+            <Link :href="route('dashboard')" class="flex w-full items-center justify-center" aria-label="WashApp · Panel">
                 <img
-                    v-if="!collapsed || mobile"
                     src="/images/logo-washapp.png"
                     alt="WashApp"
-                    class="h-9 w-auto dark:brightness-0 dark:invert"
-                />
-                <img
-                    v-else
-                    src="/images/isologo.png"
-                    alt="WashApp"
-                    class="h-8 w-8 rounded-xl object-contain"
+                    class="w-auto object-contain transition-all duration-300 dark:brightness-0 dark:invert"
+                    :class="collapsed && !mobile ? 'h-8 max-w-[4rem]' : 'h-14 max-w-[11rem]'"
                 />
             </Link>
 
-            <!-- Colapsar (desktop) -->
-            <button
-                v-if="!mobile"
-                type="button"
-                class="grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-                :aria-label="collapsed ? 'Expandir menú' : 'Colapsar menú'"
-                @click="emit('toggle-collapse')"
-            >
-                <svg class="h-4 w-4 transition-transform duration-300" :class="{ 'rotate-180': collapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
-                </svg>
-            </button>
-
             <!-- Cerrar (móvil) -->
             <button
-                v-else
+                v-if="mobile"
                 type="button"
-                class="grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700"
+                class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700"
                 aria-label="Cerrar menú"
                 @click="emit('close')"
             >
@@ -188,6 +196,30 @@ const logout = () => router.post(route('logout'));
                 {{ user?.points ?? 0 }}
                 <span class="text-xs font-medium text-mist-400">pts</span>
             </p>
+        </div>
+
+        <!-- Plegar / desplegar -->
+        <div v-if="!mobile" class="border-t border-mist-200/70 px-3 py-2 dark:border-slate-800">
+            <button
+                type="button"
+                class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-xs font-semibold text-mist-400 transition hover:bg-mist-100 hover:text-mist-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                :class="collapsed ? 'justify-center px-0' : ''"
+                :aria-label="collapsed ? 'Expandir menú' : 'Contraer menú'"
+                :title="collapsed ? 'Expandir menú' : 'Contraer menú'"
+                @click="emit('toggle-collapse')"
+            >
+                <svg
+                    class="h-4 w-4 shrink-0 transition-transform duration-300"
+                    :class="{ 'rotate-180': collapsed }"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
+                </svg>
+                <span v-if="!collapsed">Contraer menú</span>
+            </button>
         </div>
 
         <!-- Usuario -->

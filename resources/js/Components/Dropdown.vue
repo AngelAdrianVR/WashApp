@@ -14,6 +14,14 @@ const props = defineProps({
         type: Array,
         default: () => ['py-1', 'bg-white'],
     },
+    panelClasses: {
+        type: String,
+        default: 'rounded-md ring-1 ring-black ring-opacity-5',
+    },
+    wrapperClasses: {
+        type: String,
+        default: 'rounded-md shadow-lg',
+    },
 });
 
 let open = ref(false);
@@ -65,12 +73,11 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                class="absolute z-50 mt-2"
+                :class="[widthClass, alignmentClasses, wrapperClasses]"
                 style="display: none;"
-                @click="open = false"
             >
-                <div class="rounded-md ring-1 ring-black ring-opacity-5" :class="contentClasses">
+                <div :class="[panelClasses, contentClasses]">
                     <slot name="content" />
                 </div>
             </div>
