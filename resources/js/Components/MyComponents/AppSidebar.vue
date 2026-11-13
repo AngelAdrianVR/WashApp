@@ -31,12 +31,6 @@ const menuItems = computed(() => [
         visible: true,
     },
     {
-        label: 'Mi perfil',
-        icon: 'pi pi-user',
-        route: profileRoute.value,
-        visible: isClient.value,
-    },
-    {
         label: 'Agendar cita',
         icon: 'pi pi-calendar-plus',
         route: 'client.bookings.create',
@@ -116,6 +110,12 @@ const menuItems = computed(() => [
         label: 'Usuarios',
         icon: 'pi pi-users',
         route: 'admin.users.index',
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Configuraciones',
+        icon: 'pi pi-cog',
+        route: 'admin.settings.index',
         visible: hasRole('Admin'),
     },
 ]);
@@ -224,20 +224,27 @@ const logout = () => router.post(route('logout'));
 
         <!-- Usuario -->
         <div class="border-t border-mist-200/70 px-3 py-3 dark:border-slate-800">
-            <div class="flex items-center gap-3" :class="collapsed && !mobile ? 'justify-center' : ''">
-                <img
-                    :src="user?.avatar_url || user?.profile_photo_url"
-                    :alt="user?.name"
-                    class="h-9 w-9 flex-shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-slate-700"
-                />
-                <div v-if="!collapsed || mobile" class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-mist-800 dark:text-slate-100">{{ user?.name }}</p>
-                    <p class="truncate text-[11px] uppercase tracking-wider text-mist-400">{{ user?.role }}</p>
-                </div>
+            <div class="flex items-center gap-2" :class="collapsed && !mobile ? 'justify-center' : ''">
+                <Link
+                    :href="route(profileRoute)"
+                    class="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 transition hover:bg-mist-100 dark:hover:bg-slate-800"
+                    :class="collapsed && !mobile ? 'justify-center' : ''"
+                    title="Ver mi perfil"
+                >
+                    <img
+                        :src="user?.avatar_url || user?.profile_photo_url"
+                        :alt="user?.name"
+                        class="h-9 w-9 flex-shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-slate-700"
+                    />
+                    <div v-if="!collapsed || mobile" class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-mist-800 dark:text-slate-100">{{ user?.name }}</p>
+                        <p class="truncate text-[11px] uppercase tracking-wider text-mist-400">{{ user?.role }}</p>
+                    </div>
+                </Link>
                 <button
                     v-if="!collapsed || mobile"
                     type="button"
-                    class="ml-auto grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"
+                    class="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-mist-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"
                     aria-label="Cerrar sesión"
                     @click="logout"
                 >

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\VehicleCategory;
 use App\Services\BookingNotifier;
+use App\Services\BusinessScheduleService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,14 +30,29 @@ class BookingController extends Controller
             return $this->employeeIndex($request, $user);
         }
 
+        $validated = $request->validate([
+            'status' => ['nullable', Rule::in(['pending', 'confirmed', 'on_way', 'in_progress', 'completed', 'cancelled'])],
+            'sort' => ['nullable', Rule::in(['recent', 'oldest'])],
+            'hide_completed' => ['nullable', 'boolean'],
+        ]);
+
+        $sortDirection = ($validated['sort'] ?? 'recent') === 'oldest' ? 'asc' : 'desc';
+
         $bookings = Booking::with('services')
             ->where('user_id', $user->id)
-            ->orderBy('scheduled_at', 'desc')
-            ->paginate(20)
+            ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($request->boolean('hide_completed'), fn ($query) => $query->where('status', '!=', 'completed'))
+            ->orderBy('scheduled_at', $sortDirection)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Client/Bookings/Index', [
             'bookings' => $bookings,
+            'filters' => [
+                'status' => $validated['status'] ?? null,
+                'sort' => $validated['sort'] ?? 'recent',
+                'hide_completed' => $request->boolean('hide_completed'),
+            ],
         ]);
     }
 
@@ -198,16 +215,68 @@ class BookingController extends Controller
             ]);
         }
 
-        // Obtenemos solo los servicios activos para mostrarlos al cliente
-        $services = Service::where('is_active', true)->orderBy('name')->get();
-
+        // Catálogo activo con precios/duraciones por categoría de vehículo.
         return Inertia::render('Client/Bookings/Create', [
-            'services' => $services,
+            'services' => $this->clientServiceCatalog(),
             'user' => [ // Pasamos solo la info necesaria del usuario
                 'name' => $user->name,
                 'phone_number' => $user->phone_number,
-            ]
+            ],
+            'cars' => $user->cars()
+                ->with('vehicleCategory')
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn ($car) => $car->toCatalogArray())
+                ->values(),
+            'addresses' => $user->addresses()
+                ->orderByDesc('is_default')
+                ->orderBy('label')
+                ->get()
+                ->map(fn ($address) => $address->toOptionArray())
+                ->values(),
+            'vehicleCategories' => VehicleCategory::active()
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'slug']),
+            'schedule' => app(BusinessScheduleService::class)->frontendSchedule(now(), 120),
         ]);
+    }
+
+    /**
+     * Catálogo de servicios para el formulario del cliente.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function clientServiceCatalog(): array
+    {
+        return Service::query()
+            ->active()
+            ->with('vehicleCategories')
+            ->orderBy('is_addon')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(function (Service $service) {
+                $variants = $service->vehicleCategories->mapWithKeys(fn (VehicleCategory $category) => [
+                    $category->id => [
+                        'price' => (float) $category->pivot->price,
+                        'duration_minutes' => (int) $category->pivot->duration_minutes,
+                    ],
+                ]);
+
+                return [
+                    'id' => $service->id,
+                    'name' => $service->name,
+                    'description' => $service->description,
+                    'type' => $service->type,
+                    'is_addon' => (bool) $service->is_addon,
+                    'points' => $service->points,
+                    'price' => (float) $service->price,
+                    'duration_minutes' => (int) $service->duration_minutes,
+                    'variants' => $variants,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     public function store(Request $request)
@@ -217,13 +286,15 @@ class BookingController extends Controller
         }
 
         // 1. Validación de los datos del formulario
+        $user = $request->user();
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'required|string|max:20',
             'street' => 'required|string|max:255',
-            'street_number' => 'nullable|string|max:30',
+            'street_number' => 'required|string|max:30',
             'neighborhood' => 'required|string|max:255',
-            'postal_code' => 'nullable|string|max:10',
+            'postal_code' => 'required|digits:5',
             'state' => 'required|string|max:80',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
@@ -232,14 +303,56 @@ class BookingController extends Controller
             'scheduled_at' => 'required|date_format:Y-m-d H:i',
             'payment_method' => 'nullable|string|in:Efectivo,Tarjeta,Transferencia',
             'notes' => 'nullable|string|max:1000',
+            'car_id' => ['nullable', Rule::exists('cars', 'id')->where('user_id', $user->id)],
+            'address_id' => ['nullable', Rule::exists('addresses', 'id')->where('user_id', $user->id)],
+            'vehicle_category_id' => ['nullable', 'exists:vehicle_categories,id'],
+            'vehicle_brand' => ['nullable', 'string', 'max:100'],
+            'vehicle_model' => ['nullable', 'string', 'max:100'],
         ]);
 
-        // 2. Calcular la duración total y obtener los servicios de la BD
-        $selectedServices = Service::whereIn('id', $validatedData['services'])->get();
-        $totalDuration = (int) $selectedServices->sum('duration_minutes');
-        $requestedStartTime = Carbon::parse($validatedData['scheduled_at']);
+        if (empty($validatedData['car_id'])) {
+            $request->validate([
+                'vehicle_brand' => 'required|string|max:100',
+                'vehicle_model' => 'required|string|max:100',
+                'vehicle_category_id' => 'required|exists:vehicle_categories,id',
+            ]);
+        }
 
-        // 3. Lógica para encontrar un empleado disponible
+        // 2. Servicios, vehículo y duración total
+        $selectedServices = Service::whereIn('id', $validatedData['services'])->with('vehicleCategories')->get();
+
+        $selectedCar = ! empty($validatedData['car_id'])
+            ? $user->cars()->find($validatedData['car_id'])
+            : null;
+
+        $vehicleCategoryId = $selectedCar?->vehicle_category_id ?? ($validatedData['vehicle_category_id'] ?? null);
+        $vehicleBrand = $selectedCar?->brand ?? ($validatedData['vehicle_brand'] ?? null);
+        $vehicleModel = $selectedCar?->model ?? ($validatedData['vehicle_model'] ?? null);
+
+        if (empty($vehicleCategoryId)) {
+            return back()
+                ->withErrors(['vehicle_category_id' => 'Selecciona el tipo de vehículo para calcular el precio.'])
+                ->withInput();
+        }
+
+        $totalDuration = max(
+            (int) $selectedServices->sum(fn (Service $service) => $service->durationFor($vehicleCategoryId)),
+            1
+        );
+
+        $requestedStartTime = Carbon::parse($validatedData['scheduled_at']);
+        $requestedEndTime = $requestedStartTime->copy()->addMinutes($totalDuration);
+
+        // 3. El intervalo completo debe caer dentro del horario de operación.
+        $schedule = app(BusinessScheduleService::class);
+
+        if (! $schedule->isOpenWindow($requestedStartTime, $requestedEndTime)) {
+            return back()
+                ->withErrors(['scheduled_at' => 'La fecha u hora está fuera del horario de operación. Elige otro horario.'])
+                ->withInput();
+        }
+
+        // 4. Lógica para encontrar un empleado disponible
         $availableEmployeeId = $this->findAvailableEmployee($requestedStartTime, $totalDuration);
 
         if (! $availableEmployeeId) {
@@ -255,15 +368,16 @@ class BookingController extends Controller
             $validatedData['state'] ?? null,
         ])));
 
-        // 4. Iniciar una transacción
+        // 5. Iniciar una transacción
         DB::beginTransaction();
         try {
             $booking = Booking::create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
+                'car_id' => $selectedCar?->id,
                 'employee_id' => $availableEmployeeId,
                 'scheduled_at' => $requestedStartTime,
                 'status' => 'pending',
-                'total_price' => $selectedServices->sum(fn (Service $service) => (float) $service->price),
+                'total_price' => $selectedServices->sum(fn (Service $service) => $service->priceFor($vehicleCategoryId)),
                 'payment_method' => $validatedData['payment_method'] ?? 'Efectivo',
                 'address' => $address,
                 'street' => $validatedData['street'],
@@ -274,16 +388,17 @@ class BookingController extends Controller
                 'latitude' => $validatedData['latitude'] ?? null,
                 'longitude' => $validatedData['longitude'] ?? null,
                 'notes' => $validatedData['notes'] ?? null,
+                'vehicle_brand' => $vehicleBrand,
+                'vehicle_model' => $vehicleModel,
+                'vehicle_category_id' => $vehicleCategoryId,
             ]);
 
-            // **MODIFICADO**: Preparar datos para la tabla pivote con el precio actual
             $servicesToAttach = [];
             foreach ($selectedServices as $service) {
-                $servicesToAttach[$service->id] = ['price_at_booking' => $service->price];
+                $servicesToAttach[$service->id] = ['price_at_booking' => $service->priceFor($vehicleCategoryId)];
             }
             $booking->services()->attach($servicesToAttach);
 
-            $user = Auth::user();
             if ($user->name !== $validatedData['name'] || $user->phone_number !== $validatedData['phone_number']) {
                 $user->name = $validatedData['name'];
                 $user->phone_number = $validatedData['phone_number'];
@@ -410,6 +525,10 @@ class BookingController extends Controller
             'payment_method' => $booking->payment_method,
             'total_price' => round((float) $booking->total_price, 2),
             'notes' => $booking->notes,
+            'cancel_reason' => $booking->cancel_reason,
+            'vehicle_brand' => $booking->vehicle_brand,
+            'vehicle_model' => $booking->vehicle_model,
+            'created_at' => $booking->created_at?->toIso8601String(),
             'employee_id' => $booking->employee_id,
             'employee_name' => $booking->employee?->name,
             'employee_avatar' => $booking->employee?->avatar_url ?: $booking->employee?->profile_photo_url,
@@ -455,7 +574,7 @@ class BookingController extends Controller
         }
 
         return Inertia::render('Client/Bookings/Show', [
-            'booking' => $booking,
+            'booking' => $this->bookingListItem($booking),
         ]);
     }
 
@@ -798,6 +917,14 @@ class BookingController extends Controller
         $categoryId = $validated['vehicle_category_id'] ?? null;
         $duration = (int) $selectedServices->sum(fn (Service $service) => $service->durationFor($categoryId));
 
+        $schedule = app(BusinessScheduleService::class);
+
+        if (! $schedule->isOpenWindow($scheduledAt, $scheduledAt->copy()->addMinutes(max($duration, 1)))) {
+            return back()
+                ->withErrors(['scheduled_at' => 'La fecha u hora está fuera del horario de operación. Elige otro horario.'])
+                ->withInput();
+        }
+
         $employeeId = $this->findAvailableEmployee($scheduledAt, $duration);
 
         if (! $employeeId) {
@@ -891,24 +1018,31 @@ class BookingController extends Controller
     }
 
     /**
-     * Horarios de 1 hora (9:00 a 18:00) con al menos un empleado libre.
+     * Horarios de 1 hora dentro del horario de operación con al menos un empleado libre.
      *
      * @return array<int, string>
      */
     private function hourlyAvailability(Carbon $date, int $durationMinutes): array
     {
         $durationMinutes = max($durationMinutes, 1);
+        $schedule = app(BusinessScheduleService::class);
+        $date = $date->copy()->startOfDay();
+
+        if ($schedule->isClosedOn($date)) {
+            return [];
+        }
+
         $employees = User::where('role', 'Empleado')->where('is_active', true)->get();
 
         if ($employees->isEmpty()) {
             return [];
         }
 
-        $workDayStart = $date->copy()->setTime(9, 0);
-        $workDayEnd = $date->copy()->setTime(18, 0);
+        $workDayStart = $schedule->dayStart($date);
+        $workDayEnd = $schedule->dayEnd($date);
         $now = now();
 
-        if ($date->isToday() && $now->gte($workDayEnd)) {
+        if ($workDayEnd->lte($now) || $workDayStart->gte($workDayEnd)) {
             return [];
         }
 
@@ -933,6 +1067,11 @@ class BookingController extends Controller
             $slotEnd = $slot->copy()->addMinutes($durationMinutes);
 
             if ($date->isToday() && $slotStart->lte($now)) {
+                $slot->addHour();
+                continue;
+            }
+
+            if ($schedule->overlapsClosure($slotStart, $slotEnd, $date)) {
                 $slot->addHour();
                 continue;
             }

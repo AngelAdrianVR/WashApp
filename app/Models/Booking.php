@@ -16,6 +16,7 @@ class Booking extends Model
 
     protected $fillable = [
         'user_id',
+        'car_id',
         'employee_id',
         'guest_name',
         'guest_email',
@@ -68,6 +69,14 @@ class Booking extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * El vehículo registrado con el que se agendó la reserva.
+     */
+    public function car(): BelongsTo
+    {
+        return $this->belongsTo(Car::class);
     }
 
     /**

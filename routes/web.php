@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminExpenseController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\ClientProfileController;
 use App\Http\Controllers\LandingController;
@@ -157,6 +159,16 @@ Route::middleware([
         // --------------------------------------
         // Gestión de las recompensas otorgadas a los usuarios.
         Route::resource('rewards', UserRewardController::class);
+
+
+        // CONFIGURACIONES ----------------------
+        // --------------------------------------
+        // Horario de operación, días de descanso y horarios especiales.
+        Route::get('settings', [BusinessSettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings', [BusinessSettingsController::class, 'update'])->name('settings.update');
+        Route::post('settings/exceptions', [BusinessSettingsController::class, 'storeException'])->name('settings.exceptions.store');
+        Route::put('settings/exceptions/{exception}', [BusinessSettingsController::class, 'updateException'])->name('settings.exceptions.update');
+        Route::delete('settings/exceptions/{exception}', [BusinessSettingsController::class, 'destroyException'])->name('settings.exceptions.destroy');
     });
 
 
@@ -200,6 +212,7 @@ Route::middleware([
         // --------------------------------------
         // El cliente puede ver las recompensas/cupones que ha ganado.
         Route::get('rewards', [UserRewardController::class, 'index'])->name('rewards.index');
+        Route::post('rewards/{reward}/redeem', [UserRewardController::class, 'redeem'])->name('rewards.redeem');
 
         // MI PERFIL ----------------------------
         // --------------------------------------
@@ -215,6 +228,13 @@ Route::middleware([
         Route::delete('cars/{car}', [CarController::class, 'destroy'])->name('cars.destroy');
         Route::post('cars/{car}/photos', [CarController::class, 'storePhoto'])->name('cars.photos.store');
         Route::delete('cars/{car}/photos/{media}', [CarController::class, 'destroyPhoto'])->name('cars.photos.destroy');
+
+        // MIS DOMICILIOS -----------------------
+        // --------------------------------------
+        Route::post('addresses', [AddressController::class, 'store'])->name('addresses.store');
+        Route::put('addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
+        Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
+        Route::patch('addresses/{address}/default', [AddressController::class, 'setDefault'])->name('addresses.default');
     });
 
 

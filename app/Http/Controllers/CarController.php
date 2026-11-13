@@ -85,6 +85,7 @@ class CarController extends Controller
             'year' => 'nullable|integer|min:1950|max:' . (now()->year + 1),
             'color' => 'nullable|string|max:40',
             'plates' => 'nullable|string|max:15',
+            'vehicle_category_id' => 'required|exists:vehicle_categories,id',
         ]);
     }
 

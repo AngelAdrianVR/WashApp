@@ -11,6 +11,9 @@ const nf = new Intl.NumberFormat('es-MX');
 
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user ?? null);
+const panelRoute = computed(() =>
+    currentUser.value?.role === 'Cliente' ? 'client.rewards.index' : 'dashboard'
+);
 
 const loyaltySteps = [
     {
@@ -59,7 +62,7 @@ const iconPaths = {
 
                     <div class="mt-7 flex flex-wrap justify-center gap-2">
                         <template v-if="currentUser">
-                            <Link :href="route('dashboard')" class="wa-btn-primary">Ver mis puntos</Link>
+                            <Link :href="route(panelRoute)" class="wa-btn-primary">Ver mis puntos</Link>
                             <Link :href="route('landing.agendar')" class="wa-btn-soft">Agendar servicio</Link>
                         </template>
                         <template v-else>
@@ -128,7 +131,7 @@ const iconPaths = {
                                 <h3 class="text-base font-semibold text-mist-900">{{ reward.name }}</h3>
                                 <p class="mt-2 flex-1 text-sm leading-relaxed text-mist-500">{{ reward.description }}</p>
 
-                                <Link v-if="currentUser" :href="route('dashboard')" class="wa-btn-sage mt-5 w-full">
+                                <Link v-if="currentUser" :href="route(panelRoute)" class="wa-btn-sage mt-5 w-full">
                                     Canjear
                                 </Link>
                                 <Link v-else :href="route('login')" class="wa-btn-sage mt-5 w-full">

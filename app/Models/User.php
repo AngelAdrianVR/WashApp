@@ -151,4 +151,20 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(Car::class);
     }
+
+    /**
+     * Domicilios guardados para agilizar el agendado.
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
+     * Premios del catálogo canjeados con puntos.
+     */
+    public function rewardRedemptions(): HasMany
+    {
+        return $this->hasMany(RewardRedemption::class);
+    }
 }

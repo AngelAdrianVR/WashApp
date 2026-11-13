@@ -24,6 +24,7 @@ class Car extends Model implements HasMedia
 
     protected $fillable = [
         'user_id',
+        'vehicle_category_id',
         'brand',
         'model',
         'year',
@@ -49,6 +50,11 @@ class Car extends Model implements HasMedia
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vehicleCategory(): BelongsTo
+    {
+        return $this->belongsTo(VehicleCategory::class);
     }
 
     /**
@@ -82,6 +88,8 @@ class Car extends Model implements HasMedia
             'year' => $this->year,
             'color' => $this->color,
             'plates' => $this->plates,
+            'vehicle_category_id' => $this->vehicle_category_id,
+            'vehicle_category' => $this->vehicleCategory?->name,
             'photos' => $this->photosBySide(),
         ];
     }
