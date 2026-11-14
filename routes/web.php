@@ -89,7 +89,6 @@ Route::middleware([
             // Calculate statistics for the client.
             $stats = [
                 'completedBookingsCount' => Booking::where('user_id', $user->id)->where('status', 'completed')->count(),
-                'totalSpent' => Booking::where('user_id', $user->id)->where('status', 'completed')->sum('total_price'),
                 // This assumes you have a 'rewards' relationship defined in your User model.
                 'availableRewards' => $user->rewards()->where('is_claimed', false)->count(),
             ];

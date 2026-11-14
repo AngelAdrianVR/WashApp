@@ -1,7 +1,10 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+const scheduleLabel = computed(() => page.props.business?.schedule_label ?? 'Horario por confirmar');
 
 const form = reactive({
     name: '',
@@ -81,7 +84,7 @@ const channels = [
     {
         label: 'Teléfono',
         value: '+52 33 1234 5678',
-        hint: 'Lun a Sáb · 8:00 – 19:00',
+        hint: 'Atención telefónica directa',
         faClass: 'fa-solid fa-phone',
         href: 'tel:+523312345678',
         tone: 'sand',
@@ -252,8 +255,8 @@ const toggleFaq = (index) => {
 
                             <div class="mt-5 rounded-2xl bg-mist-50 p-4 text-xs leading-relaxed text-mist-500">
                                 <p class="font-semibold text-mist-700">Horario de atención</p>
-                                <p class="mt-1">Lunes a sábado · 8:00 a 19:00 h</p>
-                                <p>Domingo · solo servicios programados</p>
+                                <p class="mt-1">{{ scheduleLabel }}</p>
+                                <p>Los servicios se agendan dentro de este horario.</p>
                             </div>
                         </section>
 

@@ -58,4 +58,40 @@ class BusinessSetting extends Model
     {
         return substr((string) $this->closing_time, 0, 5);
     }
+
+    /**
+     * Etiqueta legible de los días de operación, por ejemplo "Lun a Sáb".
+     */
+    public function daysLabel(): string
+    {
+        $names = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        $days = $this->operatingDays();
+        sort($days);
+
+        if (count($days) === 7) {
+            return 'Todos los días';
+        }
+
+        if (count($days) >= 3 && $days === range($days[0], $days[0] + count($days) - 1)) {
+            return $names[$days[0]] . ' a ' . $names[$days[count($days) - 1]];
+        }
+
+        $labels = array_map(fn (int $day) => $names[$day], $days);
+
+        if (count($labels) === 1) {
+            return $labels[0];
+        }
+
+        $last = array_pop($labels);
+
+        return implode(', ', $labels) . ' y ' . $last;
+    }
+
+    /**
+     * Horario completo listo para mostrar en el sitio público.
+     */
+    public function scheduleLabel(): string
+    {
+        return $this->daysLabel() . ' · ' . $this->openingTime() . ' – ' . $this->closingTime() . ' h';
+    }
 }

@@ -89,6 +89,7 @@ const removeNotification = (item) => {
         :content-classes="[]"
         panel-classes=""
         wrapper-classes=""
+        fixed-on-mobile
     >
         <template #trigger>
             <button
@@ -109,7 +110,7 @@ const removeNotification = (item) => {
         </template>
 
         <template #content>
-            <div class="w-[26rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl border border-mist-200 bg-white shadow-lift dark:border-slate-700 dark:bg-gray-900">
+            <div class="w-full overflow-hidden rounded-3xl border border-mist-200 bg-white shadow-lift dark:border-slate-700 dark:bg-gray-900 sm:w-[26rem] sm:max-w-[calc(100vw-2rem)]">
                 <!-- Encabezado -->
                 <div class="flex items-center justify-between gap-2 border-b border-mist-200/70 px-4 py-3 dark:border-slate-800">
                     <div class="flex items-center gap-2">
@@ -163,7 +164,7 @@ const removeNotification = (item) => {
                 </div>
 
                 <!-- Lista -->
-                <ul v-if="notifications.length" class="max-h-[26rem] overflow-y-auto">
+                <ul v-if="notifications.length" class="max-h-[calc(100vh-12rem)] overflow-y-auto sm:max-h-[26rem]">
                     <li v-for="item in notifications" :key="item.id" class="border-b border-mist-100/70 last:border-0 dark:border-slate-800/70">
                         <div class="flex items-start gap-2 px-3 py-3 transition hover:bg-mist-50 dark:hover:bg-slate-800/70">
                             <input

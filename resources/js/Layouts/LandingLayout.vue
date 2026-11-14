@@ -17,6 +17,8 @@ const description =
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user ?? null);
 const firstName = computed(() => currentUser.value?.name?.split(' ')[0] ?? '');
+const business = computed(() => page.props.business ?? {});
+const scheduleLabel = computed(() => business.value.schedule_label ?? 'Horario por confirmar');
 
 // --- Navigation Links ---
 const navigation = ref([
@@ -311,8 +313,8 @@ watch(
                                 </Link>
                             </li>
                             <li>
-                                <Link :href="route('landing.index') + '#membresias'" class="transition hover:text-mist-900">
-                                    Membresías mensuales
+                                <Link :href="route('landing.promociones')" class="transition hover:text-mist-900">
+                                    Promociones vigentes
                                 </Link>
                             </li>
                         </ul>
@@ -348,7 +350,10 @@ watch(
                                     <i class="fa-regular fa-circle-question text-sand-400"></i> Reportar una incidencia
                                 </Link>
                             </li>
-                            <li class="text-xs text-mist-400">Lun a Sáb · 8:00 – 19:00 h</li>
+                            <li class="flex items-start gap-2 text-xs text-mist-400">
+                                <i class="fa-regular fa-clock mt-0.5 text-mist-300"></i>
+                                <span>{{ scheduleLabel }}</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -363,10 +368,12 @@ watch(
                             href="https://dtw.com.mx/"
                             target="_blank"
                             rel="noopener"
-                            class="flex items-center gap-1.5 rounded-lg bg-cloud-700 px-2 py-1 text-white transition hover:bg-cloud-800"
+                            class="flex items-center gap-3 rounded-2xl bg-cloud-700 px-4 py-2.5 text-white shadow-soft transition hover:bg-cloud-800"
                         >
-                            <span>BY</span>
-                            <img class="h-3 w-auto" src="/images/DTW_logo_blanco.png" alt="DTW" />
+                            <span class="text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-cloud-100/80">
+                                Desarrollado<br />por
+                            </span>
+                            <img class="h-8 w-auto sm:h-9" src="/images/DTW_logo_blanco.png" alt="DTW" />
                         </a>
                     </div>
                 </div>

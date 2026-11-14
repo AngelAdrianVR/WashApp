@@ -114,13 +114,13 @@ const historyCount = computed(() => props.history.length);
                     </span>
                 </div>
 
-                <div v-if="rewards.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-if="rewards.length" class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                     <article
                         v-for="reward in rewards"
                         :key="reward.id"
-                        class="group flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-soft backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-lift dark:border-slate-700 dark:bg-gray-800"
+                        class="group flex flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/85 shadow-soft backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-lift dark:border-slate-700 dark:bg-gray-800 sm:rounded-3xl"
                     >
-                        <div class="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-cloud-100 to-sage-50 dark:from-slate-700 dark:to-slate-700">
+                        <div class="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-cloud-100 to-sage-50 dark:from-slate-700 dark:to-slate-700 sm:aspect-[16/10]">
                             <img
                                 v-if="reward.image_url"
                                 :src="reward.image_url"
@@ -129,25 +129,29 @@ const historyCount = computed(() => props.history.length);
                                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                             />
                             <div v-else class="grid h-full place-items-center text-cloud-400 dark:text-slate-500">
-                                <i class="pi pi-gift text-3xl"></i>
+                                <i class="pi pi-gift text-2xl sm:text-3xl"></i>
                             </div>
 
-                            <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-cloud-700 shadow-sm">
-                                <i class="pi pi-star-fill text-[10px] text-amber-400"></i>
+                            <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-cloud-700 shadow-sm sm:left-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                                <i class="pi pi-star-fill text-[8px] text-amber-400 sm:text-[10px]"></i>
                                 {{ reward.points_cost }} pts
                             </span>
                         </div>
 
-                        <div class="flex flex-1 flex-col p-5">
-                            <h3 class="text-base font-semibold text-mist-900 dark:text-white">{{ reward.name }}</h3>
-                            <p class="mt-2 flex-1 text-sm leading-relaxed text-mist-500 dark:text-slate-400">
-                                {{ reward.description }}
-                            </p>
+                        <div class="flex flex-1 flex-col p-3 sm:p-5">
+                            <h3 class="text-sm font-semibold text-mist-900 dark:text-white sm:text-base">
+                                <span class="line-clamp-2">{{ reward.name }}</span>
+                            </h3>
+                            <div class="mt-1.5 flex-1 sm:mt-2">
+                                <p class="line-clamp-2 text-xs leading-relaxed text-mist-500 dark:text-slate-400 sm:text-sm">
+                                    {{ reward.description }}
+                                </p>
+                            </div>
 
                             <button
                                 v-if="reward.can_redeem"
                                 type="button"
-                                class="wa-btn-sage mt-5 w-full !px-4 !py-2.5"
+                                class="wa-btn-sage mt-3 w-full !px-3 !py-2 text-xs sm:mt-5 sm:!px-4 sm:!py-2.5 sm:text-sm"
                                 :disabled="redeemingId === reward.id"
                                 @click="redeem(reward)"
                             >
@@ -158,7 +162,7 @@ const historyCount = computed(() => props.history.length);
                                 v-else
                                 type="button"
                                 disabled
-                                class="mt-5 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-mist-200 bg-mist-50 px-4 py-2.5 text-xs font-semibold text-mist-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500"
+                                class="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-2xl border border-mist-200 bg-mist-50 px-2 py-2 text-center text-[11px] font-semibold leading-tight text-mist-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500 sm:mt-5 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-xs"
                             >
                                 <i class="pi pi-lock text-[10px]"></i>
                                 Te faltan {{ reward.missing_points }} pts

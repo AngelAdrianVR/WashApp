@@ -138,8 +138,66 @@ html {
   }
 }
 
-/* Animación de aparición al hacer scroll (usada por LandingLayout) */
-[data-reveal] {
+/* ============================================================
+   Carruseles y detalles en movimiento de la landing pública
+   ============================================================ */
+.wa-scroll-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wa-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Las tarjetas del carrusel se acercan al centro según el scroll */
+.wa-scroll-card {
+  transform: translate3d(0, calc((1 - var(--focus, 1)) * 12px), 0)
+    scale(calc(0.95 + (var(--focus, 1) * 0.05)));
+  opacity: calc(0.62 + (var(--focus, 1) * 0.38));
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+}
+
+/* Cinta de ventajas que se desplaza sola */
+.wa-marquee-wrap {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.wa-marquee {
+  display: flex;
+  width: max-content;
+  animation: wa-marquee 38s linear infinite;
+}
+
+.wa-marquee-wrap:hover .wa-marquee {
+  animation-play-state: paused;
+}
+
+@keyframes wa-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-scroll-card {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  .wa-marquee {
+    animation: none;
+  }
+}
+
+/* Animación de aparición al hacer scroll (usada por LandingLayout) */[data-reveal] {
   opacity: 0;
   transform: translateY(22px);
   transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),

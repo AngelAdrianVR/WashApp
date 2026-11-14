@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BusinessSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +43,17 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'booking' => fn () => $request->session()->get('booking'),
             ],
+            'business' => fn () => (function () {
+                $settings = BusinessSetting::current();
+
+                return [
+                    'opening_time' => $settings->openingTime(),
+                    'closing_time' => $settings->closingTime(),
+                    'operating_days' => $settings->operatingDays(),
+                    'days_label' => $settings->daysLabel(),
+                    'schedule_label' => $settings->scheduleLabel(),
+                ];
+            })(),
             'notifications' => fn () => $request->user()
                 ? $request->user()
                     ->userNotifications()
