@@ -3,9 +3,6 @@ import { Head, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 
 defineProps({
     status: String,
@@ -21,40 +18,37 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Forgot Password" />
+    <Head title="Recuperar contraseña" />
 
     <AuthenticationCard>
         <template #logo>
             <AuthenticationCardLogo />
         </template>
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
+        <div class="mb-5 text-sm leading-relaxed text-mist-500">
+            Escribe tu correo y te enviaremos un enlace para restablecer tu contraseña.
         </div>
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
+        <div v-if="status" class="mb-4 rounded-2xl bg-sage-50 px-4 py-3 text-sm font-medium text-sage-700">
             {{ status }}
         </div>
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
-                <TextInput
-                    id="email"
-                    v-model="form.email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
+                <label for="email" class="wa-label">Correo electrónico</label>
+                <input id="email" v-model="form.email" type="email" class="wa-input" placeholder="tu@correo.com" required autofocus autocomplete="username" />
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="flex items-center justify-end mt-4">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Email Password Reset Link
-                </PrimaryButton>
+            <div class="mt-5">
+                <button
+                    type="submit"
+                    class="wa-btn-primary w-full !py-3.5"
+                    :class="{ 'pointer-events-none opacity-60': form.processing }"
+                    :disabled="form.processing"
+                >
+                    Enviar enlace de restablecimiento
+                </button>
             </div>
         </form>
     </AuthenticationCard>

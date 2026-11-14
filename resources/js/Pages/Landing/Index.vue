@@ -1,538 +1,606 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
+import ScrollCarousel from '@/Components/Landing/ScrollCarousel.vue';
 import { Link } from '@inertiajs/vue3';
 
-// Se ejecuta después de que el componente se ha montado en el DOM.
-onMounted(() => {
-  // --- Lógica para crear el fondo de burbujas animadas ---
-  const bubbleContainer = document.querySelector('.bubbles-container');
-  if (bubbleContainer) {
-    const numberOfBubbles = 25; // Cantidad de burbujas
-    for (let i = 0; i < numberOfBubbles; i++) {
-      const bubble = document.createElement('span');
-      // Usamos una clase genérica para la animación y una específica para el estilo
-      bubble.className = 'bubble'; 
-      
-      // Estilos aleatorios para cada burbuja
-      const size = Math.random() * 80 + 10 + 'px'; // Tamaño entre 10px y 60px
-      const animationDuration = Math.random() * 9 + 7 + 's'; // Duración entre 8s y 18s
-      const animationDelay = Math.random() * 2 + 's'; // Retraso entre 0s y 2s
-
-      bubble.style.width = size;
-      bubble.style.height = size;
-      bubble.style.left = Math.random() * 100 + '%'; // Posición horizontal aleatoria
-      bubble.style.animationDuration = animationDuration;
-      bubble.style.animationDelay = animationDelay;
-      
-      bubbleContainer.appendChild(bubble);
-    }
-  }
-
-  // --- Lógica para las transiciones al hacer scroll ---
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('fade-in-visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, {
-    threshold: 0.1
-  });
-  const elementsToAnimate = document.querySelectorAll('[data-scroll-fade]');
-  elementsToAnimate.forEach(el => observer.observe(el));
-  
-  // --- Lógica para el slider de Antes y Después ---
-  const slider = document.getElementById('image-slider');
-  const beforeImage = document.getElementById('before-image');
-  const sliderLine = document.querySelector('.slider-line');
-  const sliderHandle = document.querySelector('.slider-handle');
-
-  if (slider && beforeImage && sliderLine && sliderHandle) {
-      const updateSlider = (value) => {
-          beforeImage.style.clipPath = `polygon(0 0, ${value}% 0, ${value}% 100%, 0 100%)`;
-          sliderLine.style.left = `${value}%`;
-          sliderHandle.style.left = `${value}%`;
-      };
-      // Valor inicial
-      updateSlider(slider.value);
-      // Evento al mover el slider
-      slider.addEventListener('input', (e) => {
-          updateSlider(e.target.value);
-      });
-  }
+const props = defineProps({
+    packages: { type: Array, default: () => [] },
+    rewardsPreview: { type: Array, default: () => [] },
 });
 
+const nf = new Intl.NumberFormat('es-MX');
 
-// Lista de servicios actualizada y más detallada
-const services = ref([
-  {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" /></svg>`,
-    title: 'Lavado Ecológico Premium',
-    description: 'Utilizamos una técnica avanzada con polímeros y cera de carnauba que encapsula la suciedad, levantándola sin rayar. Ahorramos más de 150 litros de agua por lavado.'
-  },
-  {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`,
-    title: 'Lavado a Detalle (Showroom)',
-    description: 'Limpieza exhaustiva con agua a presión controlada, shampoo con pH neutro y guantes de microfibra. Ideal para una limpieza profunda y segura para la pintura.'
-  },
-  {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>`,
-    title: 'Pulido y Encerado Cerámico',
-    description: 'Eliminamos micro-rayones y devolvemos el brillo original. Aplicamos una capa de cera con polímeros cerámicos para una protección duradera contra el sol, lluvia y polvo.'
-  },
-  {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`,
-    title: 'Limpieza Profunda de Interiores',
-    description: 'Aspirado completo, limpieza de tapicería (tela o piel), acondicionamiento de plásticos y eliminación de olores. Dejamos tu cabina fresca y como nueva.'
-  }
-]);
+const prefersReducedMotion =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const whyChooseUs = ref([
-    {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-        title: 'Ahorra Tiempo Valioso',
-        description: 'No más filas ni esperas. Nos adaptamos a tu horario y vamos a donde estés: tu casa, tu oficina o donde nos necesites.'
-    },
-    {
-        icon: `<i class="fa-solid text-3xl fa-tree"></i>`,
-        title: 'Productos Eco-Amigables',
-        description: 'Usamos solo productos biodegradables de alta gama que son seguros para tu auto, para ti y para el medio ambiente.'
-    },
-    {
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-        title: 'Calidad Profesional Garantizada',
-        description: 'Nuestro equipo está capacitado para ofrecer un acabado impecable. Tu satisfacción es nuestra máxima prioridad.'
+/* ---------------------------------------------------------
+   Hero: ubicación animada
+   --------------------------------------------------------- */
+const locations = ['tu casa', 'tu oficina', 'tu edificio', 'tu estacionamiento'];
+const typedLocation = ref('');
+
+let typingTimer = null;
+let locationIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+
+const typeLoop = () => {
+    const current = locations[locationIndex];
+
+    if (!isDeleting) {
+        charIndex += 1;
+        typedLocation.value = current.slice(0, charIndex);
+
+        if (charIndex === current.length) {
+            isDeleting = true;
+            typingTimer = setTimeout(typeLoop, 1700);
+            return;
+        }
+
+        typingTimer = setTimeout(typeLoop, 72);
+        return;
     }
-]);
 
-// Beneficios para miembros
-const memberBenefits = ref([
-    {
-        icon: `<i class="fa-solid fa-percent text-3xl"></i>`,
-        title: 'Descuentos Exclusivos',
-        description: 'Accede a precios especiales y ofertas que no encontrarás en ningún otro lado, solo por ser parte de la comunidad WashApp.'
-    },
-    {
-        icon: `<i class="fa-solid fa-circle-dollar-to-slot text-3xl"></i>`,
-        title: 'Servicios Gratis',
-        description: 'Acumula puntos con cada lavado y canjéalos por servicios gratuitos, como encerado express o limpieza de tapetes.'
-    },
-    {
-        icon: `<i class="fa-solid fa-gift text-3xl"></i>`,
-        title: 'Regalo de Cumpleaños',
-        description: 'Celebramos contigo. Recibe un lavado básico completamente gratis durante el mes de tu cumpleaños.'
-    }
-]);
+    charIndex -= 1;
+    typedLocation.value = current.slice(0, charIndex);
 
-// (NOVEDAD) - Lista de testimonios
-const testimonials = ref([
-    {
-        quote: "El servicio fue increíble. Llegaron puntuales, fueron súper profesionales y mi auto quedó más limpio que cuando lo saqué de la agencia. ¡Totalmente recomendado!",
-        author: "Ana L., Zapopan",
-        rating: 5
-    },
-    {
-        quote: "Contraté el lavado a detalle y el resultado superó mis expectativas. Cuidan cada rincón del coche. El personal es muy amable y el servicio es de primera.",
-        author: "Carlos G., Guadalajara",
-        rating: 5
-    },
-    {
-        quote: "Muy buen servicio en general. El auto quedó muy limpio por dentro y por fuera. Solo tardaron unos 15 minutos más de lo estimado, pero valió la pena la espera.",
-        author: "Laura M., Tlaquepaque",
-        rating: 4
-    },
-    {
-        quote: "La comodidad de que vengan a tu casa no tiene precio. El lavado ecológico es una maravilla y el coche brilla como nuevo. Excelente atención al cliente.",
-        author: "Javier R., Zapopan",
-        rating: 5
+    if (charIndex === 0) {
+        isDeleting = false;
+        locationIndex = (locationIndex + 1) % locations.length;
+        typingTimer = setTimeout(typeLoop, 380);
+        return;
     }
-]);
 
-// (NOVEDAD) - Planes para Agencias
-const agencyPlans = ref([
-    {
-        name: 'Flotilla Bronce',
-        price: '$1,500',
-        period: '/mes',
-        carCount: '5-10 Autos',
-        features: [
-            'Lavado Ecológico Exterior',
-            'Aspirado Básico de Interiores',
-            'Limpieza de Cristales',
-            'Servicio Semanal'
-        ]
-    },
-    {
-        name: 'Flotilla Plata',
-        price: '$2,800',
-        period: '/mes',
-        carCount: '11-20 Autos',
-        features: [
-            'Todo en Bronce',
-            'Lavado a Detalle Exterior',
-            'Acondicionamiento de Plásticos',
-            'Prioridad de Agenda'
-        ],
-        popular: true
-    },
-    {
-        name: 'Flotilla Oro',
-        price: 'Personalizado',
-        period: '',
-        carCount: '20+ Autos',
-        features: [
-            'Todo en Plata',
-            'Limpieza Profunda de Interiores',
-            'Encerado Cerámico Básico',
-            'Ejecutivo de Cuenta Dedicado'
-        ]
+    typingTimer = setTimeout(typeLoop, 34);
+};
+
+/* ---------------------------------------------------------
+   Contador ecológico
+   --------------------------------------------------------- */
+const LITERS_SAVED_PER_WASH = 85;
+const WASHES_COMPLETED = 12400;
+const litersTarget = WASHES_COMPLETED * LITERS_SAVED_PER_WASH;
+
+const litersSaved = ref(prefersReducedMotion ? litersTarget : 0);
+let counterFrame = null;
+
+const animateCounter = () => {
+    if (prefersReducedMotion) return;
+
+    const duration = 1600;
+    const start = performance.now();
+
+    const tick = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        litersSaved.value = Math.round(litersTarget * eased);
+
+        if (progress < 1) {
+            counterFrame = requestAnimationFrame(tick);
+        }
+    };
+
+    counterFrame = requestAnimationFrame(tick);
+};
+
+onMounted(() => {
+    animateCounter();
+
+    if (prefersReducedMotion) {
+        typedLocation.value = locations[0];
+        return;
     }
-]);
+
+    typingTimer = setTimeout(typeLoop, 600);
+});
+
+onUnmounted(() => {
+    if (counterFrame) cancelAnimationFrame(counterFrame);
+    if (typingTimer) clearTimeout(typingTimer);
+});
+
+/* ---------------------------------------------------------
+   Contenido conciso de la página
+   --------------------------------------------------------- */
+const advantages = [
+    {
+        title: 'Comodidad total',
+        description: 'Lavamos en tu casa, oficina o estacionamiento. Tú sigue con tu día.',
+        icon: 'home',
+        tone: 'cloud',
+    },
+    {
+        title: 'Ecológico y consciente',
+        description: 'Solo 15 litros de agua y productos biodegradables: hasta 85 L menos por lavado.',
+        icon: 'leaf',
+        tone: 'sage',
+    },
+    {
+        title: 'Simple y digital',
+        description: 'Agenda, paga y recibe el reporte fotográfico desde tu celular. Sin efectivo.',
+        icon: 'phone',
+        tone: 'sand',
+    },
+];
+
+const marqueeItems = [
+    'Operadores verificados',
+    'Pago digital sin efectivo',
+    'Seguro de responsabilidad',
+    'Productos biodegradables',
+    'Puntos en cada lavado',
+    'Agenda en 2 minutos',
+];
+
+const iconPaths = {
+    leaf: 'M20 4c0 8-5 12-11 12H5c0-7 5-11 11-11h4z|M5 20c1-4 4-7 8-9',
+    drop: 'M12 3s6 6.2 6 10.5A6 6 0 016 13.5C6 9.2 12 3 12 3z',
+    home: 'M4 11l8-7 8 7|M6 10v10h12V10',
+    phone: 'M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z|M10 18h4',
+};
+
+const typeMeta = {
+    Seco: { tag: 'En seco · 0 L', icon: 'leaf', tone: 'sage' },
+    Agua: { tag: 'Bajo consumo · 15 L', icon: 'drop', tone: 'cloud' },
+};
+
+const modalities = computed(() =>
+    props.packages.map((service) => ({
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        minPrice: service.min_price,
+        ...(typeMeta[service.type] ?? typeMeta.Seco),
+    }))
+);
+
+const rewards = computed(() => props.rewardsPreview.slice(0, 3));
+
+const testimonials = [
+    {
+        quote: 'Agendé desde la app y llegaron puntual. Dejaron el auto impecable mientras yo trabajaba.',
+        author: 'Ana L.',
+        city: 'Zapopan',
+    },
+    {
+        quote: 'El lavado en seco quedó perfecto y sin una sola gota de agua en el estacionamiento.',
+        author: 'Carlos G.',
+        city: 'Guadalajara',
+    },
+    {
+        quote: 'Pagué en línea y me retocaron una mancha sin discusión al día siguiente.',
+        author: 'Laura M.',
+        city: 'Tlaquepaque',
+    },
+];
+
+const toneClasses = {
+    cloud: 'bg-cloud-100 text-cloud-600',
+    sage: 'bg-sage-100 text-sage-600',
+    sand: 'bg-sand-100 text-sand-600',
+};
 </script>
 
 <template>
-    <LandingLayout :title="'Inicio'">
-        <main class="bg-slate-50 text-gray-800">
-            <!-- =========== Hero Section STARTS =========== -->
-            <section id="inicio" class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-                <!-- Contenedor de burbujas -->
-                <div class="bubbles-container" style="z-index: 999;" aria-hidden="true"></div>
-
-                 <!-- Fondo de olas -->
-                <div class="absolute inset-0 z-0 opacity-50">
-                    <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-white to-transparent"></div>
-                    <svg class="w-full h-auto absolute bottom-0 left-0" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="#e0f2fe" fill-opacity="1" d="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,202.7C672,224,768,224,864,197.3C960,171,1056,117,1152,106.7C1248,96,1344,128,1392,144L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
-                    <svg class="w-full h-auto absolute bottom-0 left-0" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="#bae6fd" fill-opacity="0.5" d="M0,256L48,240C96,224,192,192,288,176C384,160,480,160,576,181.3C672,203,768,245,864,250.7C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
-                </div>
-                <div class="container mx-auto px-6 text-center relative z-10">
-                    <h1 data-scroll-fade class="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-800 leading-tight mb-4">
-                        El Cuidado Premium que tu Auto
-                        <span class="block bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400">
-                            Merece y Agradece.
+    <LandingLayout title="Inicio">
+        <!-- ==================== HERO ==================== -->
+        <section class="relative overflow-hidden px-3 sm:px-5">
+            <div class="mx-auto max-w-7xl">
+                <div class="grid items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-16">
+                    <!-- Copy -->
+                    <div data-reveal>
+                        <span class="wa-eyebrow">
+                            <span class="relative flex h-2 w-2">
+                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sage-400 opacity-75"></span>
+                                <span class="relative inline-flex h-2 w-2 rounded-full bg-sage-600"></span>
+                            </span>
+                            Lavado ecológico a domicilio
                         </span>
-                    </h1>
-                    <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-8">
-                        Experimenta la máxima conveniencia con nuestro servicio de lavado de autos a domicilio. Calidad, ecología y el mejor trato, todo en la puerta de tu casa.
-                    </p>
-                    <a data-scroll-fade :style="{'transition-delay': '300ms'}" href="#agendar" class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
-                        Agendar Mi Lavado Ahora
-                    </a>
-                </div>
-            </section>
-            <!-- =========== Hero Section ENDS =========== -->
 
-            <!-- =========== Services Section STARTS =========== -->
-            <section id="servicios" class="py-20 lg:py-32 bg-sky-50">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                         <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Un Servicio para Cada Necesidad</h2>
-                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
-                           Desde una limpieza ecológica rápida hasta un detallado profundo. Tenemos el plan perfecto para que tu auto luzca impecable.
+                        <h1 class="wa-title mt-6 text-4xl leading-[1.05] sm:text-5xl lg:text-[3.5rem]">
+                            <span class="hero-word block">Tu auto limpio,</span>
+                            <span
+                                class="hero-word mt-1 block bg-gradient-to-r from-cloud-600 via-cloud-500 to-sage-500 bg-clip-text text-transparent"
+                                :style="{ animationDelay: '160ms' }"
+                            >sin mover un dedo.</span>
+                        </h1>
+
+                        <p class="mt-5 flex flex-wrap items-baseline gap-x-2 text-lg text-mist-600 sm:text-xl">
+                            <span>Llegamos a</span>
+                            <span class="inline-flex items-baseline font-semibold text-cloud-700">
+                                {{ typedLocation || '\u00a0' }}<span class="typing-caret" aria-hidden="true"></span>
+                            </span>
                         </p>
-                        <!-- (NOVEDAD) - Botón agregado -->
-                        <div class="mt-8" data-scroll-fade :style="{'transition-delay': '300ms'}">
-                            <a :href="route('landing.servicios')" class="bg-blue-500 text-white font-bold text-lg py-3 px-8 rounded-full hover:bg-blue-600 transition-colors duration-300 shadow-md hover:shadow-lg">
-                                Ver Servicios Disponibles
-                            </a>
-                        </div>
-                    </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div v-for="(service, index) in services" :key="index" 
-                             data-scroll-fade 
-                             :style="{ 'transition-delay': `${index * 100}ms` }"
-                             class="glass-card bg-white rounded-xl p-6 flex flex-col items-center text-center transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300">
-                            <div class="text-blue-500 mb-4" v-html="service.icon"></div>
-                            <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ service.title }}</h3>
-                            <p class="text-slate-600 text-sm">{{ service.description }}</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <!-- =========== Services Section ENDS =========== -->
-            
-            <!-- =========== Why Choose Us Section STARTS =========== -->
-            <section id="por-que-elegirnos" class="py-20 lg:py-32">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">La Diferencia está en los Detalles</h2>
-                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
-                            No solo lavamos autos, los cuidamos. Descubre por qué nuestros clientes nos prefieren.
+                        <p class="mt-3 max-w-xl text-base leading-relaxed text-mist-500">
+                            Agenda en línea y nosotros nos encargamos del resto: solo 15 litros de agua y productos
+                            biodegradables.
                         </p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                        <div v-for="(feature, index) in whyChooseUs" :key="index" 
-                             data-scroll-fade 
-                             :style="{ 'transition-delay': `${index * 150}ms` }"
-                             class="flex flex-col items-center">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-cyan-100 text-cyan-500 mb-4" v-html="feature.icon"></div>
-                            <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ feature.title }}</h3>
-                            <p class="text-slate-600">{{ feature.description }}</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <!-- =========== Why Choose Us Section ENDS =========== -->
 
-            <!-- =========== Testimonial Section STARTS (MODIFICADO) =========== -->
-            <section id="testimonios" class="py-20 lg:py-32 bg-sky-50">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Lo que dicen nuestros clientes</h2>
+                        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+                            <Link :href="route('landing.agendar')" class="wa-btn-primary text-base">
+                                Agendar ahora
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                                </svg>
+                            </Link>
+                            <Link :href="route('landing.servicios')" class="wa-btn-soft text-base">
+                                Ver servicios
+                            </Link>
+                        </div>
+
+                        <ul class="mt-7 flex flex-wrap gap-2">
+                            <li class="wa-chip border-sage-200 bg-sage-50/90 text-sage-700">
+                                <i class="fa-solid fa-leaf"></i> 85 L menos por lavado
+                            </li>
+                            <li class="wa-chip border-cloud-200 bg-cloud-50/90 text-cloud-700">
+                                <i class="fa-solid fa-mobile-screen"></i> 100% digital
+                            </li>
+                            <li class="wa-chip border-sand-200 bg-sand-50/90 text-sand-600">
+                                <i class="fa-solid fa-shield-halved"></i> Operadores verificados
+                            </li>
+                        </ul>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                        <div v-for="(testimonial, index) in testimonials" :key="index"
-                             data-scroll-fade
-                             :style="{ 'transition-delay': `${index * 100}ms` }"
-                             class="glass-card bg-white rounded-xl p-8 shadow-lg flex flex-col justify-between text-center">
-                            <div>
-                                <p class="text-slate-600 text-lg italic mb-6">"{{ testimonial.quote }}"</p>
+
+                    <!-- Visual -->
+                    <div class="relative" data-reveal>
+                        <div class="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-sage-200/50 blur-2xl"></div>
+                        <div class="absolute -bottom-8 right-2 h-32 w-32 rounded-full bg-cloud-200/60 blur-3xl"></div>
+
+                        <div class="relative wa-card p-3">
+                            <div class="overflow-hidden rounded-[1.35rem]">
+                                <img
+                                    src="/images/auto-limpio-1.png"
+                                    alt="Vehículo recién lavado por WashApp"
+                                    class="h-[280px] w-full object-cover sm:h-[360px]"
+                                    fetchpriority="high"
+                                />
                             </div>
-                            <div>
-                                <p class="font-bold text-slate-800">- {{ testimonial.author }}</p>
-                                <div class="flex justify-center mt-4 text-yellow-400">
-                                    <!-- Estrellas llenas -->
-                                    <svg v-for="i in testimonial.rating" :key="`filled-${i}`" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                                    <!-- Estrellas vacías -->
-                                    <svg v-for="i in (5 - testimonial.rating)" :key="`empty-${i}`" class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.049-3.292l-2.8-2.034c-.784-.57-1.838.197-1.539 1.118l1.07 3.292a1 1 0 00.364 1.118l2.8 2.034c.784.57 1.838-.197 1.539-1.118l-1.07-3.292a1 1 0 00-.364-1.118zM11.95 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clip-rule="evenodd" /></svg>
+
+                            <div class="absolute -left-2 top-6 w-[210px] rounded-2xl border border-white/70 bg-white/85 p-4 shadow-lift backdrop-blur-md sm:-left-8">
+                                <div class="flex items-center gap-2">
+                                    <span class="relative flex h-2.5 w-2.5">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sage-400 opacity-70"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-sage-500"></span>
+                                    </span>
+                                    <span class="text-[11px] font-semibold uppercase tracking-wider text-mist-400">En servicio</span>
+                                </div>
+                                <p class="mt-2 text-sm font-semibold text-mist-900">Lavado ecológico</p>
+                                <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-mist-100">
+                                    <div class="h-full w-2/3 rounded-full bg-gradient-to-r from-sage-400 to-cloud-400"></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <!-- =========== Testimonial Section ENDS =========== -->
 
-            <!-- =========== (NOVEDAD) Agency Pricing Section STARTS =========== -->
-            <section id="agencias" class="py-20 lg:py-32">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Planes Especiales para Agencias y Flotillas</h2>
-                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
-                            Soluciones a la medida para mantener tu flotilla de vehículos siempre impecable. Ahorra tiempo y dinero con nuestros paquetes.
-                        </p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-                        <div v-for="(plan, index) in agencyPlans" :key="index"
-                             data-scroll-fade
-                             :style="{ 'transition-delay': `${index * 150}ms` }"
-                             :class="[
-                                'rounded-xl p-8 border flex flex-col relative',
-                                plan.popular ? 'bg-slate-800 text-white border-blue-500 ring-2 ring-blue-500 transform md:scale-105' : 'bg-white text-slate-800 border-slate-200'
-                             ]">
-                            <div v-if="plan.popular" class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                                <span class="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Más Popular</span>
-                            </div>
-                            <h3 class="text-2xl font-bold mb-1">{{ plan.name }}</h3>
-                            <p :class="['mb-6', plan.popular ? 'text-slate-300' : 'text-slate-500']">{{ plan.carCount }}</p>
-                            <div class="mb-6">
-                                <span class="text-5xl font-extrabold">{{ plan.price }}</span>
-                                <span v-if="plan.period" :class="['text-lg', plan.popular ? 'text-slate-400' : 'text-slate-500']">{{ plan.period }}</span>
-                            </div>
-                            <ul class="space-y-4 mb-8 flex-grow">
-                                <li v-for="feature in plan.features" :key="feature" class="flex items-start">
-                                    <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>{{ feature }}</span>
-                                </li>
-                            </ul>
-                            <a href="#agendar" 
-                               :class="[
-                                    'w-full text-center font-bold py-3 rounded-lg transition-colors duration-300 mt-auto',
-                                    plan.popular ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
-                               ]">
-                                Contactar para Contratar
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <!-- =========== Agency Pricing Section ENDS =========== -->
-            
-            <!-- =========== (NOVEDAD) Gallery Section STARTS =========== -->
-            <section id="galeria" class="py-20 lg:py-32 bg-slate-50">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Resultados que Hablan por Sí Mismos</h2>
-                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
-                            Desliza para ver la transformación. Así es como devolvemos el brillo y la vida a cada vehículo que tratamos.
-                        </p>
-                    </div>
-
-                    <div data-scroll-fade :style="{'transition-delay': '300ms'}" class="max-w-4xl mx-auto">
-                        <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl comparison-slider">
-                            <!-- Imagen Después (fondo) -->
-                            <img id="after-image" src="@/../../public/images/auto-limpio-1.png" alt="Coche limpio y brillante" class="absolute inset-0 w-full h-full object-cover select-none">
-                            
-                            <!-- Imagen Antes (frente, se recorta) -->
-                            <div id="before-image" class="absolute inset-0 w-full h-full overflow-hidden select-none">
-                                <img src="@/../../public/images/auto-sucio-1.png" alt="Coche sucio antes del lavado" class="h-full w-full object-cover">
-                            </div>
-                            
-                            <!-- Slider -->
-                            <input type="range" id="image-slider" min="0" max="100" value="50" class="absolute inset-0 w-full h-full cursor-pointer opacity-0">
-                            
-                            <!-- Barra divisoria -->
-                            <div class="slider-line"></div>
-                            <!-- Círculo del slider -->
-                            <div class="slider-handle">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+                            <div class="absolute -bottom-6 right-2 rounded-2xl border border-white/70 bg-sage-600/95 px-4 py-3 text-white shadow-lift backdrop-blur-md sm:right-6">
+                                <p class="text-[11px] font-medium uppercase tracking-wider text-sage-100">Agua por lavado</p>
+                                <p class="text-xl font-semibold">15 litros</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
-            <!-- =========== Gallery Section ENDS =========== -->
+            </div>
+        </section>
 
-            <!-- =========== Member Benefits Section STARTS =========== -->
-            <section id="beneficios" class="py-20 lg:py-32">
-                <div class="container mx-auto px-6">
-                    <div class="text-center mb-16">
-                        <h2 data-scroll-fade class="text-3xl md:text-4xl font-bold text-slate-800">Beneficios Exclusivos al Registrarte</h2>
-                        <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-slate-600 mt-2 max-w-2xl mx-auto">
-                            Crear una cuenta es gratis y te da acceso a un mundo de ventajas pensadas para ti y tu auto.
-                        </p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                        <div v-for="(benefit, index) in memberBenefits" :key="index" 
-                             data-scroll-fade 
-                             :style="{ 'transition-delay': `${index * 150}ms` }"
-                             class="flex flex-col items-center">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-sky-100 text-sky-500 mb-4" v-html="benefit.icon"></div>
-                            <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ benefit.title }}</h3>
-                            <p class="text-slate-600">{{ benefit.description }}</p>
-                        </div>
-                    </div>
-                    <div class="text-center mt-16">
-                        <Link :href="route('landing.promociones')" 
-                              data-scroll-fade 
-                              class="cta-button bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
-                            Ver Todas las Promociones
-                        </Link>
+        <!-- ==================== CINTA DE VENTAJAS ==================== -->
+        <section class="mt-4">
+            <div class="wa-marquee-wrap border-y border-white/60 bg-white/50 py-3 backdrop-blur-sm">
+                <div class="wa-marquee gap-3">
+                    <div v-for="copy in 2" :key="copy" class="flex shrink-0 items-center gap-3 pr-3" aria-hidden="true">
+                        <span
+                            v-for="item in marqueeItems"
+                            :key="`${copy}-${item}`"
+                            class="wa-chip whitespace-nowrap border-mist-200/80 bg-white/80 text-mist-600"
+                        >
+                            <i class="fa-solid fa-circle-check text-sage-500"></i>
+                            {{ item }}
+                        </span>
                     </div>
                 </div>
-            </section>
-            <!-- =========== Member Benefits Section ENDS =========== -->
+            </div>
+        </section>
 
-            <!-- =========== CTA Section STARTS =========== -->
-            <section id="agendar" class="py-20 lg:py-32 bg-slate-800 text-white">
-                <div class="container mx-auto px-6 text-center">
-                    <h2 data-scroll-fade class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
-                        ¿Listo para un Auto Reluciente sin Esfuerzo?
-                    </h2>
-                    <p data-scroll-fade :style="{'transition-delay': '150ms'}" class="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
-                       Dale a tu auto el cuidado que se merece con la comodidad que tú necesitas. Agenda en menos de 2 minutos.
-                    </p>
-                    <Link :href="route('landing.agendar')" 
-                          data-scroll-fade 
-                          :style="{'transition-delay': '300ms'}"
-                          class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg">
-                        Ver Planes y Agendar
+        <!-- ==================== VENTAJAS ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-20">
+            <div class="mx-auto max-w-7xl">
+                <div class="mx-auto max-w-2xl text-center" data-reveal>
+                    <span class="wa-eyebrow">Por qué WashApp</span>
+                    <h2 class="wa-title mt-5 text-3xl sm:text-4xl">Menos esfuerzo, más tiempo para ti</h2>
+                </div>
+
+                <div class="mt-10 grid gap-4 sm:grid-cols-3">
+                    <div
+                        v-for="(advantage, index) in advantages"
+                        :key="advantage.title"
+                        class="wa-card p-6 transition-transform duration-300 hover:-translate-y-1"
+                        data-reveal
+                        :style="{ transitionDelay: `${index * 80}ms` }"
+                    >
+                        <span class="grid h-11 w-11 place-items-center rounded-2xl" :class="toneClasses[advantage.tone]">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                <template v-for="(d, i) in iconPaths[advantage.icon].split('|')" :key="i">
+                                    <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
+                                </template>
+                            </svg>
+                        </span>
+                        <h3 class="mt-5 text-lg font-semibold text-mist-900">{{ advantage.title }}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-mist-500">{{ advantage.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SERVICIOS ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-20">
+            <div class="mx-auto max-w-7xl">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+                    <div class="max-w-xl">
+                        <span class="wa-eyebrow">Servicios</span>
+                        <h2 class="wa-title mt-5 text-3xl sm:text-4xl">Elige cómo cuidar tu auto</h2>
+                    </div>
+                    <Link :href="route('landing.servicios')" class="wa-btn-ghost w-fit">
+                        Ver todos los servicios
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                        </svg>
                     </Link>
                 </div>
-            </section>
-            <!-- =========== CTA Section ENDS =========== -->
-        </main>
+
+                <ScrollCarousel v-if="modalities.length" label="Servicios WashApp" class="mt-8">
+                    <Link
+                        v-for="modality in modalities"
+                        :key="modality.id"
+                        :href="route('landing.agendar', { service: modality.id })"
+                        class="wa-scroll-card group flex w-[80%] shrink-0 snap-start flex-col rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft backdrop-blur-md transition-shadow hover:shadow-lift sm:w-[46%] lg:w-[38%]"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <span
+                                class="grid h-11 w-11 place-items-center rounded-2xl"
+                                :class="modality.tone === 'sage' ? 'bg-sage-100 text-sage-600' : 'bg-cloud-100 text-cloud-600'"
+                            >
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                    <template v-for="(d, i) in iconPaths[modality.icon].split('|')" :key="i">
+                                        <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
+                                    </template>
+                                </svg>
+                            </span>
+                            <span class="wa-chip whitespace-nowrap !px-3 !py-1 text-[10px]">{{ modality.tag }}</span>
+                        </div>
+
+                        <h3 class="mt-5 text-xl font-semibold tracking-tight text-mist-900">{{ modality.name }}</h3>
+                        <div class="mt-2 flex-1">
+                            <p class="line-clamp-2 text-sm leading-relaxed text-mist-500">{{ modality.description }}</p>
+                        </div>
+
+                        <div class="mt-5 flex items-end justify-between gap-3 border-t border-mist-200/70 pt-4">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider text-mist-400">Desde</p>
+                                <p class="text-lg font-semibold text-mist-900">${{ nf.format(modality.minPrice) }}</p>
+                            </div>
+                            <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-cloud-600 transition-all group-hover:gap-2.5">
+                                Agendar
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                                </svg>
+                            </span>
+                        </div>
+                    </Link>
+                </ScrollCarousel>
+
+                <p
+                    v-else
+                    class="mt-8 rounded-3xl border border-dashed border-mist-300 bg-white/60 p-8 text-center text-sm text-mist-500"
+                >
+                    Estamos actualizando el catálogo. Vuelve en un momento.
+                </p>
+            </div>
+        </section>
+
+        <!-- ==================== IMPACTO ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-20">
+            <div class="mx-auto max-w-7xl">
+                <div
+                    class="relative overflow-hidden rounded-3xl border border-sage-300/60 bg-gradient-to-br from-sage-700 via-sage-600 to-cloud-800 p-8 text-white shadow-lift sm:p-10"
+                    data-reveal
+                >
+                    <div class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-sage-300/20 blur-3xl"></div>
+                    <div class="pointer-events-none absolute -bottom-24 left-10 h-64 w-64 rounded-full bg-cloud-300/20 blur-3xl"></div>
+
+                    <div class="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+                        <div>
+                            <span class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sage-50">
+                                <i class="fa-solid fa-leaf"></i> Ecológico y consciente
+                            </span>
+                            <h2 class="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">
+                                Cada lavado ahorra 85 litros de agua
+                            </h2>
+                            <p class="mt-3 max-w-lg text-sm leading-relaxed text-sage-50/85">
+                                Lavar con manguera consume hasta 100 litros. Nosotros usamos 15 o cero en el lavado en
+                                seco, con productos biodegradables.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="col-span-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                                <p class="text-3xl font-semibold tracking-tight">{{ nf.format(litersSaved) }} L</p>
+                                <p class="mt-1 text-[11px] uppercase tracking-wider text-sage-100/80">
+                                    Ahorrados por la comunidad
+                                </p>
+                            </div>
+                            <div class="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                                <p class="text-xl font-semibold">15 L</p>
+                                <p class="text-[11px] uppercase tracking-wider text-sage-100/80">Por lavado</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                                <p class="text-xl font-semibold">0 L</p>
+                                <p class="text-[11px] uppercase tracking-wider text-sage-100/80">En seco</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PREMIOS ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-20">
+            <div class="mx-auto max-w-7xl">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+                    <div class="max-w-xl">
+                        <span class="wa-eyebrow">
+                            <i class="fa-solid fa-gift"></i> Premios
+                        </span>
+                        <h2 class="wa-title mt-5 text-3xl sm:text-4xl">Tus lavados se vuelven recompensas</h2>
+                        <p class="mt-3 text-sm text-mist-500">Cada servicio suma puntos automáticamente a tu cuenta.</p>
+                    </div>
+                    <Link :href="route('landing.premios')" class="wa-btn-ghost w-fit">
+                        Ver catálogo de premios
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                        </svg>
+                    </Link>
+                </div>
+
+                <div v-if="rewards.length" class="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                    <Link
+                        v-for="reward in rewards"
+                        :key="reward.id"
+                        :href="route('landing.premios')"
+                        class="group overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-soft backdrop-blur-md transition-transform duration-300 hover:-translate-y-1 sm:rounded-3xl"
+                    >
+                        <div class="relative aspect-square overflow-hidden bg-mist-100 sm:aspect-[4/3]">
+                            <img
+                                :src="reward.image_url"
+                                :alt="reward.name"
+                                loading="lazy"
+                                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-cloud-700 shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
+                                <i class="fa-solid fa-star text-[8px] text-sand-400 sm:text-[10px]"></i>
+                                {{ nf.format(reward.points_cost) }} pts
+                            </span>
+                        </div>
+                        <p class="line-clamp-2 p-3 text-sm font-semibold text-mist-900 sm:p-4 sm:text-base">{{ reward.name }}</p>
+                    </Link>
+                </div>
+
+                <div
+                    v-else
+                    class="mt-8 rounded-3xl border border-dashed border-mist-300 bg-white/60 p-8 text-center text-sm text-mist-500"
+                >
+                    Estamos preparando nuevos premios. Vuelve pronto.
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TESTIMONIOS ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-20">
+            <div class="mx-auto max-w-7xl">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+                    <div class="max-w-xl">
+                        <span class="wa-eyebrow">Testimonios</span>
+                        <h2 class="wa-title mt-5 text-3xl sm:text-4xl">Tiempo recuperado, autos impecables</h2>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-mist-500">
+                        <div class="flex text-sand-400">
+                            <svg v-for="i in 5" :key="i" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
+                            </svg>
+                        </div>
+                        <span>4.9 de 320 reseñas</span>
+                    </div>
+                </div>
+
+                <ScrollCarousel label="Testimonios de clientes" class="mt-8">
+                    <figure
+                        v-for="testimonial in testimonials"
+                        :key="testimonial.author"
+                        class="wa-scroll-card flex w-[85%] shrink-0 snap-start flex-col rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft backdrop-blur-md sm:w-[48%] lg:w-[32%]"
+                    >
+                        <div class="flex text-sand-400">
+                            <svg v-for="i in 5" :key="i" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
+                            </svg>
+                        </div>
+                        <blockquote class="mt-3 flex-1 text-sm leading-relaxed text-mist-600">
+                            “{{ testimonial.quote }}”
+                        </blockquote>
+                        <figcaption class="mt-5 flex items-center gap-3 border-t border-mist-200/70 pt-4">
+                            <span class="grid h-9 w-9 place-items-center rounded-full bg-cloud-100 text-sm font-semibold text-cloud-700">
+                                {{ testimonial.author.charAt(0) }}
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-mist-900">{{ testimonial.author }}</p>
+                                <p class="text-xs text-mist-400">{{ testimonial.city }}</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+                </ScrollCarousel>
+            </div>
+        </section>
+
+        <!-- ==================== CTA FINAL ==================== -->
+        <section class="px-3 pt-16 sm:px-5 sm:pt-24">
+            <div class="mx-auto max-w-7xl">
+                <div
+                    class="relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white/90 via-cloud-50/80 to-sage-50/80 p-8 text-center shadow-soft backdrop-blur-md sm:p-12"
+                    data-reveal
+                >
+                    <div class="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-sage-200/40 blur-3xl"></div>
+                    <div class="pointer-events-none absolute -bottom-20 -right-10 h-56 w-56 rounded-full bg-cloud-200/50 blur-3xl"></div>
+
+                    <div class="relative mx-auto max-w-2xl">
+                        <h2 class="wa-title text-3xl sm:text-4xl">Tu próximo lavado cabe en tu agenda</h2>
+                        <p class="mt-3 text-mist-500">
+                            Elige tu vehículo y el horario. Nosotros llegamos a donde estés.
+                        </p>
+                        <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                            <Link :href="route('landing.agendar')" class="wa-btn-primary text-base">
+                                Agendar ahora
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                                </svg>
+                            </Link>
+                            <Link :href="route('landing.contacto')" class="wa-btn-soft text-base">
+                                Hablar con el equipo
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </LandingLayout>
 </template>
 
 <style scoped>
-/* --- Estilos para la animación de burbujas --- */
-.bubbles-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 1; 
-    pointer-events: none;
+.hero-word {
+    display: inline-block;
+    animation: hero-word-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-:deep(.bubble) {
-    position: absolute;
-    bottom: -100px;
-    background-color: rgba(74, 138, 241, 0.301); 
-    border-radius: 50%;
-    animation-name: bubble-float;
-    animation-timing-function: ease-in;
-    animation-iteration-count: infinite;
-}
-
-@keyframes bubble-float {
-    0% {
-        transform: translateY(0);
-        opacity: 0.9;
+@keyframes hero-word-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.55em) rotate(1.5deg);
     }
-    100% {
-        transform: translateY(-120vh);
+    to {
+        opacity: 1;
+        transform: translateY(0) rotate(0);
+    }
+}
+
+.typing-caret {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 4px;
+    border-radius: 2px;
+    background-color: currentColor;
+    animation: caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+    50% {
         opacity: 0;
     }
-}
-
-
-/* --- Estilos para la animación de entrada al hacer scroll --- */
-[data-scroll-fade] {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.fade-in-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-
-/* --- Estilos existentes --- */
-.glass-card {
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-}
-
-.cta-button {
-    transition: all 0.3s ease;
-}
-
-.cta-button:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 25px rgba(2, 132, 199, 0.2);
-}
-
-/* (NOVEDAD) --- Estilos para el slider de comparación de imágenes --- */
-#before-image {
-    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
-}
-
-.slider-line {
-    position: absolute;
-    top: 0;
-    left: 50%; /* Posición inicial */
-    width: 4px;
-    height: 100%;
-    background: white;
-    transform: translateX(-50%);
-    pointer-events: none;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    transition: left 0.05s ease-out;
-}
-
-.slider-handle {
-    position: absolute;
-    top: 50%;
-    left: 50%; /* Posición inicial */
-    width: 50px;
-    height: 50px;
-    background: white;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    pointer-events: none;
-    color: #0ea5e9; /* Color de las flechas */
-    transition: left 0.05s ease-out;
 }
 </style>

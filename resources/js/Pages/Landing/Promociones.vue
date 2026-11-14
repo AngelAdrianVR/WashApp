@@ -6,93 +6,101 @@ import { ref } from 'vue';
 const promotions = ref([
     {
         title: '¡Primer Lavado con 50% de Descuento!',
-        description: 'Regístrate hoy y obtén la mitad de precio en tu primer servicio de Lavado Ecológico Premium. ¡La bienvenida perfecta para tu auto!',
+        description:
+            'Regístrate hoy y obtén la mitad de precio en tu primer servicio de Lavado Ecológico en Seco. La bienvenida perfecta para tu auto.',
         cta: 'Lo quiero',
-        icon: '🎉'
+        icon: '🎉',
     },
     {
         title: 'Plan Lealtad: Tu 6º Lavado es GRATIS',
-        description: 'Valoramos tu preferencia. Después de 5 servicios de cualquier tipo, el sexto lavado ecológico corre por nuestra cuenta. Sin trucos, solo un gracias.',
+        description:
+            'Después de 5 servicios de cualquier tipo, el sexto lavado ecológico corre por nuestra cuenta. Sin trucos, solo un gracias.',
         cta: 'Acumular puntos',
-        icon: '🎁'
+        icon: '🎁',
     },
     {
         title: 'Regalo de Cumpleaños',
-        description: 'Tu auto también merece celebrar. Te regalamos un encerado cerámico express en cualquier servicio durante el mes de tu cumpleaños.',
+        description:
+            'Tu auto también merece celebrar. Te regalamos un encerado express en cualquier servicio durante el mes de tu cumpleaños.',
         cta: 'Celebrar mi cumpleaños',
-        icon: '🎂'
+        icon: '🎂',
     },
     {
         title: 'Refiere y Gana',
-        description: 'Invita a un amigo y ambos reciben un 25% de descuento en su próximo servicio cuando tu referido complete su primer lavado.',
+        description:
+            'Invita a un amigo y ambos reciben 25% de descuento en su próximo servicio cuando tu referido complete su primer lavado.',
         cta: 'Invitar amigos',
-        icon: '🤝'
-    }
+        icon: '🤝',
+    },
 ]);
-
 </script>
 
 <template>
-    <LandingLayout :title="'Promociones Exclusivas'">
-        <main class="bg-slate-50 text-gray-800">
-            <!-- =========== Hero Section STARTS =========== -->
-            <section class="bg-gradient-to-br from-slate-900 to-slate-800 text-white pt-32 pb-20 text-center">
-                <div class="container mx-auto px-6">
-                    <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
-                        Más Beneficios, Más Brillo
+    <LandingLayout title="Promociones">
+        <div class="px-3 sm:px-5">
+            <div class="mx-auto max-w-7xl">
+                <header class="pt-8 text-center sm:pt-10" data-reveal>
+                    <span class="wa-eyebrow">Promociones</span>
+                    <h1 class="wa-title mx-auto mt-5 max-w-3xl text-4xl leading-tight sm:text-5xl">
+                        Más beneficios,
+                        <span class="block bg-gradient-to-r from-cloud-500 to-sage-400 bg-clip-text text-transparent">
+                            más brillo
+                        </span>
                     </h1>
-                    <p class="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto">
-                        Ser parte de WashApp tiene sus recompensas. Descubre todas las promociones exclusivas que tenemos para nuestros miembros.
+                    <p class="mx-auto mt-5 max-w-2xl text-mist-500">
+                        Ser parte de WashApp tiene sus recompensas. Estas son las promociones activas para miembros de
+                        la comunidad.
                     </p>
-                </div>
-            </section>
-            <!-- =========== Hero Section ENDS =========== -->
+                </header>
 
-            <!-- =========== Promotions Section STARTS =========== -->
-            <section class="py-20 lg:py-32">
-                <div class="container mx-auto px-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-                        <div v-for="(promo, index) in promotions" :key="index"
-                             class="bg-white rounded-xl p-8 shadow-lg border border-slate-100 flex flex-col items-start transform hover:-translate-y-2 transition-transform duration-300">
-                            <div class="text-4xl mb-4">{{ promo.icon }}</div>
-                            <h3 class="text-2xl font-bold text-slate-800 mb-3">{{ promo.title }}</h3>
-                            <p class="text-slate-600 mb-6 flex-grow">{{ promo.description }}</p>
-                            <Link :href="route('register')" class="font-semibold text-sky-600 hover:text-sky-700 transition-colors">
-                                {{ promo.cta }} &rarr;
-                            </Link>
+                <section class="mt-12 grid gap-5 sm:grid-cols-2">
+                    <article
+                        v-for="(promo, index) in promotions"
+                        :key="promo.title"
+                        class="wa-card flex flex-col p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:p-8"
+                        data-reveal
+                        :style="{ transitionDelay: `${index * 80}ms` }"
+                    >
+                        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-mist-100 text-2xl">
+                            {{ promo.icon }}
+                        </span>
+                        <h2 class="mt-5 text-xl font-semibold text-mist-900">{{ promo.title }}</h2>
+                        <p class="mt-2 flex-1 text-sm leading-relaxed text-mist-500">{{ promo.description }}</p>
+                        <Link
+                            :href="route('register')"
+                            class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cloud-600 transition hover:gap-3 hover:text-cloud-700"
+                        >
+                            {{ promo.cta }}
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12" />
+                            </svg>
+                        </Link>
+                    </article>
+                </section>
+
+                <section class="mt-16" data-reveal>
+                    <div
+                        class="relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white/90 via-cloud-50/80 to-sage-50/80 p-8 text-center shadow-soft backdrop-blur-md sm:p-12"
+                    >
+                        <div class="pointer-events-none absolute -left-16 -top-16 h-52 w-52 rounded-full bg-sage-200/40 blur-3xl"></div>
+                        <div class="relative mx-auto max-w-2xl">
+                            <h2 class="wa-title text-3xl sm:text-4xl">¿Aún no eres miembro?</h2>
+                            <p class="mt-4 text-mist-500">
+                                Regístrate en menos de un minuto y empieza a disfrutar de todos estos beneficios hoy
+                                mismo. Es rápido, fácil y completamente gratis.
+                            </p>
+                            <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                                <Link :href="route('register')" class="wa-btn-primary text-base">
+                                    Crear mi cuenta gratis
+                                </Link>
+                                <Link :href="route('landing.agendar')" class="wa-btn-soft text-base">
+                                    Agendar ahora
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
-            <!-- =========== Promotions Section ENDS =========== -->
-
-            <!-- =========== CTA Section STARTS =========== -->
-            <section class="bg-sky-50 py-20 lg:py-24">
-                <div class="container mx-auto px-6 text-center">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 leading-tight mb-4">
-                        ¿Aún no eres miembro?
-                    </h2>
-                    <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
-                       Regístrate en menos de un minuto y empieza a disfrutar de todos estos beneficios hoy mismo. Es rápido, fácil y completamente gratis.
-                    </p>
-                    <Link :href="route('register')"
-                          class="cta-button bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg inline-block">
-                        Crear mi Cuenta Gratis
-                    </Link>
-                </div>
-            </section>
-            <!-- =========== CTA Section ENDS =========== -->
-        </main>
+                </section>
+            </div>
+        </div>
     </LandingLayout>
 </template>
-
-<style scoped>
-.cta-button {
-    transition: all 0.3s ease;
-}
-
-.cta-button:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 25px rgba(2, 132, 199, 0.2);
-}
-</style>

@@ -4,9 +4,6 @@ import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 
 const form = useForm({
     name: '',
@@ -24,89 +21,72 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Register" />
+    <Head title="Crear cuenta" />
 
     <AuthenticationCard>
         <template #logo>
             <AuthenticationCardLogo />
         </template>
 
-        <form @submit.prevent="submit">
+        <div class="text-center">
+            <h1 class="text-2xl font-semibold tracking-tight text-mist-900">Crea tu cuenta</h1>
+            <p class="mt-2 text-sm text-mist-500">Agenda, paga y acumula puntos desde un solo lugar.</p>
+        </div>
+
+        <form class="mt-7" @submit.prevent="submit">
             <div>
-                <InputLabel for="name" value="Name" />
-                <TextInput
-                    id="name"
-                    v-model="form.name"
-                    type="text"
-                    class="mt-1 block w-full"
-                    required
-                    autofocus
-                    autocomplete="name"
-                />
+                <label for="name" class="wa-label">Nombre completo</label>
+                <input id="name" v-model="form.name" type="text" class="wa-input" placeholder="Tu nombre" required autofocus autocomplete="name" />
                 <InputError class="mt-2" :message="form.errors.name" />
             </div>
 
             <div class="mt-4">
-                <InputLabel for="email" value="Email" />
-                <TextInput
-                    id="email"
-                    v-model="form.email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="username"
-                />
+                <label for="email" class="wa-label">Correo electrónico</label>
+                <input id="email" v-model="form.email" type="email" class="wa-input" placeholder="tu@correo.com" required autocomplete="username" />
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-                <TextInput
-                    id="password"
-                    v-model="form.password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="new-password"
-                />
-                <InputError class="mt-2" :message="form.errors.password" />
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="password" class="wa-label">Contraseña</label>
+                    <input id="password" v-model="form.password" type="password" class="wa-input" placeholder="••••••••" required autocomplete="new-password" />
+                    <InputError class="mt-2" :message="form.errors.password" />
+                </div>
+                <div>
+                    <label for="password_confirmation" class="wa-label">Confirmar contraseña</label>
+                    <input id="password_confirmation" v-model="form.password_confirmation" type="password" class="wa-input" placeholder="••••••••" required autocomplete="new-password" />
+                    <InputError class="mt-2" :message="form.errors.password_confirmation" />
+                </div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password_confirmation" value="Confirm Password" />
-                <TextInput
-                    id="password_confirmation"
-                    v-model="form.password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="new-password"
-                />
-                <InputError class="mt-2" :message="form.errors.password_confirmation" />
+            <div v-if="$page.props.jetstream?.hasTermsAndPrivacyPolicyFeature" class="mt-4">
+                <label for="terms" class="flex items-start gap-2.5 text-xs leading-relaxed text-mist-500">
+                    <Checkbox id="terms" v-model:checked="form.terms" name="terms" required class="mt-0.5" />
+                    <span>
+                        Acepto los términos del servicio y el aviso de privacidad de WashApp.
+                    </span>
+                </label>
+                <InputError class="mt-2" :message="form.errors.terms" />
             </div>
 
-            <div v-if="$page.props.jetstream.hasTermsAndPrivacyPolicyFeature" class="mt-4">
-                <InputLabel for="terms">
-                    <div class="flex items-center">
-                        <Checkbox id="terms" v-model:checked="form.terms" name="terms" required />
-
-                        <div class="ms-2">
-                            I agree to the <a target="_blank" :href="route('terms.show')" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Terms of Service</a> and <a target="_blank" :href="route('policy.show')" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Privacy Policy</a>
-                        </div>
-                    </div>
-                    <InputError class="mt-2" :message="form.errors.terms" />
-                </InputLabel>
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                <Link :href="route('login')" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Already registered?
-                </Link>
-
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Register
-                </PrimaryButton>
-            </div>
+            <button
+                type="submit"
+                class="wa-btn-primary mt-6 w-full !py-3.5 text-base"
+                :class="{ 'pointer-events-none opacity-60': form.processing }"
+                :disabled="form.processing"
+            >
+                <svg v-if="form.processing" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" d="M12 3a9 9 0 109 9" />
+                </svg>
+                {{ form.processing ? 'Creando cuenta…' : 'Crear cuenta' }}
+            </button>
         </form>
+
+        <p class="mt-7 text-center text-sm text-mist-500">
+            ¿Ya tienes cuenta?
+            <Link :href="route('login')" class="font-semibold text-cloud-700 transition hover:text-cloud-800">
+                Iniciar sesión
+            </Link>
+        </p>
     </AuthenticationCard>
 </template>
