@@ -106,6 +106,14 @@ class Booking extends Model
     }
 
     /**
+     * Opinión y puntuación que dejó el cliente al finalizar el servicio.
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    /**
      * Citas que todavía no se finalizan ni se cancelan.
      */
     public function scopeOpen($query)

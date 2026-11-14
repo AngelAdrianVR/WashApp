@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\VehicleCategory;
 use App\Services\BookingNotifier;
+use App\Services\BookingSummaryPresenter;
 use App\Services\BusinessScheduleService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class BookingController extends Controller
 
         $sortDirection = ($validated['sort'] ?? 'recent') === 'oldest' ? 'asc' : 'desc';
 
-        $bookings = Booking::with('services')
+        $bookings = Booking::with(['services', 'review'])
             ->where('user_id', $user->id)
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($request->boolean('hide_completed'), fn ($query) => $query->where('status', '!=', 'completed'))
@@ -70,7 +71,7 @@ class BookingController extends Controller
         ]);
 
         $query = Booking::query()
-            ->with(['services', 'client', 'employee'])
+            ->with(['services', 'client', 'employee', 'review'])
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($validated['employee_id'] ?? null, fn ($query, $employeeId) => $query->where('employee_id', $employeeId))
             ->when($validated['from'] ?? null, fn ($query, $from) => $query->where('scheduled_at', '>=', Carbon::parse($from)->startOfDay()))
@@ -141,7 +142,7 @@ class BookingController extends Controller
         ]);
 
         $query = Booking::query()
-            ->with(['services', 'client'])
+            ->with(['services', 'client', 'review'])
             ->where('employee_id', $user->id)
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($validated['from'] ?? null, fn ($query, $from) => $query->where('scheduled_at', '>=', Carbon::parse($from)->startOfDay()))
@@ -533,6 +534,7 @@ class BookingController extends Controller
             'employee_name' => $booking->employee?->name,
             'employee_avatar' => $booking->employee?->avatar_url ?: $booking->employee?->profile_photo_url,
             'duration_minutes' => $booking->durationMinutes(),
+            'review' => BookingSummaryPresenter::review($booking),
             'services' => $booking->services->map(fn (Service $service) => [
                 'id' => $service->id,
                 'name' => $service->name,
@@ -554,7 +556,7 @@ class BookingController extends Controller
             abort(403, 'No autorizado para ver esta página.');
         }
 
-        $booking->load('services', 'employee', 'client');
+        $booking->load('services', 'employee', 'client', 'review');
 
         if ($user->role === 'Admin') {
             return Inertia::render('Admin/Bookings/Show', [

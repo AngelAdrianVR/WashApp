@@ -121,6 +121,46 @@ const submitCancellation = () => {
     });
 };
 
+// ---------------------------------------------------------------- Opiniones
+const isReviewModalVisible = ref(false);
+const reviewBooking = ref(null);
+
+const reviewForm = useForm({ rating: 5, comment: '' });
+
+const openReviewModal = (booking) => {
+    reviewBooking.value = booking;
+    reviewForm.rating = booking.review?.rating ?? 5;
+    reviewForm.comment = booking.review?.comment ?? '';
+    reviewForm.clearErrors();
+    isReviewModalVisible.value = true;
+};
+
+const closeReviewModal = () => {
+    isReviewModalVisible.value = false;
+    reviewBooking.value = null;
+    reviewForm.reset();
+};
+
+const submitReview = () => {
+    if (!reviewBooking.value) return;
+
+    reviewForm.post(route('client.bookings.review', reviewBooking.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.add({
+                severity: 'success',
+                summary: '¡Gracias por tu opinión!',
+                detail: 'Tu calificación ayuda a mejorar el servicio.',
+                life: 3200,
+            });
+            closeReviewModal();
+        },
+        onError: () => {
+            toast.add({ severity: 'error', summary: 'No se pudo enviar', detail: 'Revisa tu calificación e intenta de nuevo.', life: 3200 });
+        },
+    });
+};
+
 const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('es-MX', {
@@ -381,6 +421,18 @@ const bookingVehicle = (booking) => {
                                 <i class="pi pi-times-circle text-[11px]"></i>
                                 Cancelar
                             </button>
+                            <button
+                                v-if="booking.status === 'completed'"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition"
+                                :class="booking.review
+                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300'
+                                    : 'border border-mist-200 text-mist-600 hover:border-amber-300 hover:text-amber-700 dark:border-slate-600 dark:text-slate-300'"
+                                @click.stop="openReviewModal(booking)"
+                            >
+                                <i class="pi pi-star-fill text-[11px]"></i>
+                                {{ booking.review ? `Tu calificación: ${booking.review.rating}/5` : 'Calificar servicio' }}
+                            </button>
                         </div>
                         <span class="text-[10px] uppercase tracking-wider text-mist-300 group-hover:text-cloud-400">
                             Reserva #{{ booking.id }}
@@ -438,6 +490,76 @@ const bookingVehicle = (booking) => {
                     severity="danger"
                     :loading="cancelForm.processing"
                     @click="submitCancellation"
+                />
+            </template>
+        </Dialog>
+
+        <!-- Modal de opinión -->
+        <Dialog v-model:visible="isReviewModalVisible" modal header="Calificar servicio" :style="{ width: '90vw', maxWidth: '520px' }">
+            <div v-if="reviewBooking" class="flex flex-col gap-5">
+                <div>
+                    <p class="text-sm text-mist-600 dark:text-slate-300">
+                        ¿Cómo fue tu experiencia con el servicio del
+                        <span class="font-semibold text-mist-900 dark:text-white">{{ formatDate(reviewBooking.scheduled_at) }}</span>?
+                    </p>
+                    <div class="mt-3 flex flex-wrap gap-1.5">
+                        <span
+                            v-for="service in reviewBooking.services"
+                            :key="service.id"
+                            class="rounded-full bg-cloud-50 px-2.5 py-1 text-[11px] font-medium text-cloud-700 dark:bg-cloud-500/10 dark:text-cloud-300"
+                        >
+                            {{ service.name }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center gap-2 rounded-2xl border border-mist-100 bg-mist-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-mist-400">Tu calificación</p>
+                    <div class="flex items-center gap-1.5">
+                        <button
+                            v-for="star in 5"
+                            :key="star"
+                            type="button"
+                            class="transition hover:scale-110 focus:outline-none"
+                            :aria-label="`${star} estrella${star === 1 ? '' : 's'}`"
+                            @click="reviewForm.rating = star"
+                        >
+                            <i
+                                class="pi pi-star-fill text-3xl"
+                                :class="star <= reviewForm.rating ? 'text-amber-400' : 'text-mist-200 dark:text-slate-600'"
+                            ></i>
+                        </button>
+                    </div>
+                    <p class="text-xs font-semibold text-mist-500 dark:text-slate-400">
+                        {{ reviewForm.rating }}/5 · {{ ['Muy mala', 'Mala', 'Regular', 'Buena', 'Excelente'][reviewForm.rating - 1] }}
+                    </p>
+                    <small v-if="reviewForm.errors.rating" class="text-xs font-medium text-rose-600">{{ reviewForm.errors.rating }}</small>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="review-comment" class="text-xs font-semibold uppercase tracking-wider text-mist-500 dark:text-slate-400">
+                        Cuéntanos más (opcional)
+                    </label>
+                    <Textarea
+                        id="review-comment"
+                        v-model="reviewForm.comment"
+                        rows="4"
+                        maxlength="600"
+                        placeholder="Puntualidad, trato, resultado del lavado…"
+                        :invalid="!!reviewForm.errors.comment"
+                    />
+                    <small v-if="reviewForm.errors.comment" class="text-xs font-medium text-rose-600">{{ reviewForm.errors.comment }}</small>
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" text severity="secondary" @click="closeReviewModal" />
+                <Button
+                    label="Enviar opinión"
+                    icon="pi pi-send"
+                    :loading="reviewForm.processing"
+                    :disabled="!reviewBooking"
+                    @click="submitReview"
                 />
             </template>
         </Dialog>

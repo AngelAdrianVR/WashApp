@@ -190,6 +190,26 @@ const assignEmployee = (employeeId) => {
             </ul>
         </div>
 
+        <div v-if="booking.review" class="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    Opinión del cliente
+                </p>
+                <div class="flex items-center gap-0.5">
+                    <i
+                        v-for="star in 5"
+                        :key="star"
+                        class="pi pi-star-fill text-[10px]"
+                        :class="star <= booking.review.rating ? 'text-amber-500' : 'text-amber-200 dark:text-slate-600'"
+                    ></i>
+                    <span class="ml-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">{{ booking.review.rating }}/5</span>
+                </div>
+            </div>
+            <p v-if="booking.review.comment" class="mt-2 text-xs leading-relaxed text-mist-600 dark:text-slate-300">
+                “{{ booking.review.comment }}”
+            </p>
+        </div>
+
         <div class="flex items-center justify-between border-t border-mist-100 pt-3 dark:border-slate-700">
             <div>
                 <p class="text-[10px] uppercase tracking-wide text-mist-400">Método de pago</p>

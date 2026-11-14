@@ -8,9 +8,13 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\ClientProfileController;
+use App\Http\Controllers\EmployeeDashboardController;
+use App\Http\Controllers\EmployeeProfileController;
+use App\Http\Controllers\EmployeeServiceController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SalesAnalyticsController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
@@ -62,10 +66,7 @@ Route::middleware([
             } 
             
             if ($user->role === 'Empleado') {
-                // Logic and data for the Employee dashboard
-                return Inertia::render('Employee/Dashboard', [
-                    // Pass employee-specific data here
-                ]);
+                return app(EmployeeDashboardController::class)->index(request());
             } 
             
             // --- Client Dashboard Logic ---
@@ -183,6 +184,17 @@ Route::middleware([
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         // El empleado actualiza el estado de su trabajo (ej. 'en_camino', 'completado').
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
+
+        // HISTORIAL DE SERVICIOS REALIZADOS -----
+        // --------------------------------------
+        Route::get('services', [EmployeeServiceController::class, 'index'])->name('services.index');
+
+        // MI PERFIL -----------------------------
+        // --------------------------------------
+        Route::get('profile', [EmployeeProfileController::class, 'show'])->name('profile.show');
+        Route::put('profile', [EmployeeProfileController::class, 'update'])->name('profile.update');
+        Route::post('profile/avatar', [EmployeeProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::delete('profile/avatar', [EmployeeProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
     });
 
 
@@ -205,6 +217,7 @@ Route::middleware([
         // Se declaran después del resource.
         Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
         Route::patch('bookings/{booking}/update-notes', [BookingController::class, 'updateNotes'])->name('bookings.updateNotes');
+        Route::post('bookings/{booking}/review', [ReviewController::class, 'store'])->name('bookings.review');
 
 
         // MIS RECOMPENSAS ----------------------

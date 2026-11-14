@@ -15,8 +15,14 @@ const user = computed(() => page.props.auth.user);
 const hasRole = (role) => user.value?.role === role;
 
 const isClient = computed(() => hasRole('Cliente'));
+const isEmployee = computed(() => hasRole('Empleado'));
 
-const profileRoute = computed(() => (isClient.value ? 'client.profile.show' : 'profile.show'));
+const profileRoute = computed(() => {
+    if (isClient.value) return 'client.profile.show';
+    if (isEmployee.value) return 'employee.profile.show';
+
+    return 'profile.show';
+});
 
 const menuItems = computed(() => [
     {
@@ -70,6 +76,18 @@ const menuItems = computed(() => [
         icon: 'pi pi-briefcase',
         route: 'employee.bookings.index',
         visible: hasRole('Empleado'),
+    },
+    {
+        label: 'Historial de servicios',
+        icon: 'pi pi-history',
+        route: 'employee.services.index',
+        visible: isEmployee.value,
+    },
+    {
+        label: 'Mi perfil',
+        icon: 'pi pi-user',
+        route: 'employee.profile.show',
+        visible: isEmployee.value,
     },
     {
         label: 'Administración',

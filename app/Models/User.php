@@ -167,4 +167,20 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(RewardRedemption::class);
     }
+
+    /**
+     * Opiniones recibidas como empleado.
+     */
+    public function reviewsReceived(): HasMany
+    {
+        return $this->hasMany(Review::class, 'employee_id');
+    }
+
+    /**
+     * Opiniones escritas como cliente.
+     */
+    public function reviewsWritten(): HasMany
+    {
+        return $this->hasMany(Review::class, 'user_id');
+    }
 }
