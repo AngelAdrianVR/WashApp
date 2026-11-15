@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import StatusAnimation from '@/Components/Bookings/StatusAnimation.vue';
 
 // --- PROPS ---
 const props = defineProps({
@@ -217,10 +218,11 @@ const isStepCurrent = (status, index) => progressIndex(status) === index + 1;
         </div>
 
         <div v-if="activeBookings.length" class="grid gap-3 lg:grid-cols-2">
-          <article
+          <Link
             v-for="booking in activeBookings"
             :key="booking.id"
-            class="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur-md dark:border-slate-700 dark:bg-gray-800/80"
+            :href="route('client.bookings.show', booking.id)"
+            class="group block rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur-md transition hover:-translate-y-0.5 hover:border-cloud-300 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 dark:border-slate-700 dark:bg-gray-800/80 dark:hover:border-cloud-500/60"
           >
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
@@ -241,23 +243,27 @@ const isStepCurrent = (status, index) => progressIndex(status) === index + 1;
                 <div class="flex items-center">
                   <span
                     class="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-semibold transition"
-                    :class="isStepDone(booking.status, index)
-                      ? 'border-sage-500 bg-sage-500 text-white shadow-sm'
-                      : isStepCurrent(booking.status, index)
-                        ? 'border-cloud-500 bg-cloud-50 text-cloud-700 dark:bg-cloud-500/15 dark:text-cloud-300'
+                    :class="isStepCurrent(booking.status, index)
+                      ? 'border-cloud-500 bg-cloud-50 text-cloud-700 dark:bg-cloud-500/15 dark:text-cloud-300'
+                      : isStepDone(booking.status, index)
+                        ? 'border-sage-500 bg-sage-500 text-white shadow-sm'
                         : 'border-mist-200 bg-white text-mist-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-500'"
                   >
-                    <i v-if="isStepDone(booking.status, index)" class="pi pi-check text-[9px]"></i>
+                    <i v-if="isStepDone(booking.status, index) && !isStepCurrent(booking.status, index)" class="pi pi-check text-[9px]"></i>
+                    <StatusAnimation
+                      v-else-if="isStepCurrent(booking.status, index) && step.id !== 'completed'"
+                      :status="step.id"
+                    />
                     <span v-else>{{ index + 1 }}</span>
                   </span>
                   <span
                     v-if="index < stepperSteps.length - 1"
                     class="ml-1.5 h-1 flex-1 rounded-full"
-                    :class="isStepDone(booking.status, index + 1) ? 'bg-sage-500' : 'bg-mist-200 dark:bg-slate-700'"
+                    :class="isStepDone(booking.status, index + 1) && !isStepCurrent(booking.status, index + 1) ? 'bg-sage-500' : 'bg-mist-200 dark:bg-slate-700'"
                   ></span>
                 </div>
                 <p
-                  class="mt-2 truncate text-[10px] font-semibold uppercase tracking-wide sm:text-[11px]"
+                  class="mt-2 text-center text-[10px] font-semibold uppercase leading-tight tracking-wide"
                   :class="isStepDone(booking.status, index) || isStepCurrent(booking.status, index)
                     ? 'text-mist-700 dark:text-slate-200'
                     : 'text-mist-400 dark:text-slate-500'"
@@ -266,7 +272,12 @@ const isStepCurrent = (status, index) => progressIndex(status) === index + 1;
                 </p>
               </li>
             </ol>
-          </article>
+
+            <p class="mt-3 flex items-center justify-end gap-1 text-[11px] font-semibold text-cloud-600 opacity-0 transition group-hover:opacity-100 dark:text-cloud-300">
+              Ver detalle
+              <i class="pi pi-arrow-right text-[9px]"></i>
+            </p>
+          </Link>
         </div>
 
         <div v-else class="rounded-3xl border border-dashed border-mist-200 bg-white/70 px-6 py-10 text-center dark:border-slate-700 dark:bg-gray-800/60">

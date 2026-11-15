@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'booking' => fn () => $request->session()->get('booking'),
+                'booking_created' => fn () => $request->session()->get('booking_created'),
             ],
             'business' => fn () => (function () {
                 $settings = BusinessSetting::current();

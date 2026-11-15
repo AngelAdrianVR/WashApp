@@ -2,6 +2,7 @@
 import { ref, computed, reactive, watch } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import BookingSuccessOverlay from '@/Components/Bookings/BookingSuccessOverlay.vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -104,6 +105,7 @@ const form = reactive({
 });
 
 const isConfirmed = computed(() => !!confirmation.value && !dismissedConfirmation.value);
+const showCelebration = ref(Boolean(page.props.flash?.booking_created));
 const folio = computed(() => (confirmation.value ? `WA-${String(confirmation.value.id).padStart(5, '0')}` : ''));
 const confirmedAt = computed(() =>
     confirmation.value
@@ -468,6 +470,13 @@ const resetBooking = () => {
 
 <template>
     <LandingLayout title="Agendar">
+        <BookingSuccessOverlay
+            v-if="showCelebration"
+            :show="showCelebration"
+            :folio="folio"
+            @close="showCelebration = false"
+        />
+
         <div class="px-3 sm:px-5">
             <div class="mx-auto max-w-7xl">
                 <!-- ==================== ENCABEZADO ==================== -->

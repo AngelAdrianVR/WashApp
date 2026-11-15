@@ -40,18 +40,26 @@ const menuItems = computed(() => [
         label: 'Agendar cita',
         icon: 'pi pi-calendar-plus',
         route: 'client.bookings.create',
+        match: ['client.bookings.create'],
         visible: isClient.value,
     },
     {
         label: 'Mis reservas',
         icon: 'pi pi-book',
         route: 'client.bookings.index',
+        match: [
+            'client.bookings.index',
+            'client.bookings.show',
+            'client.bookings.edit',
+            'client.bookings.update',
+        ],
         visible: isClient.value,
     },
     {
         label: 'Mis premios',
         icon: 'pi pi-gift',
         route: 'client.rewards.index',
+        match: ['client.rewards.*'],
         visible: isClient.value,
     },
     {
@@ -63,30 +71,35 @@ const menuItems = computed(() => [
         label: 'Servicios agendados',
         icon: 'pi pi-bookmark',
         route: 'admin.bookings.index',
+        match: ['admin.bookings.index', 'admin.bookings.show', 'admin.bookings.edit', 'admin.bookings.update'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Agendar cita',
         icon: 'pi pi-calendar-plus',
         route: 'admin.bookings.create',
+        match: ['admin.bookings.create'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Mis servicios',
         icon: 'pi pi-briefcase',
         route: 'employee.bookings.index',
+        match: ['employee.bookings.*'],
         visible: hasRole('Empleado'),
     },
     {
         label: 'Historial de servicios',
         icon: 'pi pi-history',
         route: 'employee.services.index',
+        match: ['employee.services.*'],
         visible: isEmployee.value,
     },
     {
         label: 'Mi perfil',
         icon: 'pi pi-user',
         route: 'employee.profile.show',
+        match: ['employee.profile.*'],
         visible: isEmployee.value,
     },
     {
@@ -98,47 +111,60 @@ const menuItems = computed(() => [
         label: 'Analítica de vistas',
         icon: 'pi pi-chart-line',
         route: 'admin.analytics.index',
+        match: ['admin.analytics.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Análisis de ventas',
         icon: 'pi pi-chart-bar',
         route: 'admin.sales.index',
+        match: ['admin.sales.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Servicios',
         icon: 'pi pi-car',
         route: 'admin.services.index',
+        match: ['admin.services.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Promociones',
         icon: 'pi pi-tags',
         route: 'admin.promotions.index',
+        match: ['admin.promotions.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Gastos',
         icon: 'pi pi-wallet',
         route: 'admin.expenses.index',
+        match: ['admin.expenses.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Usuarios',
         icon: 'pi pi-users',
         route: 'admin.users.index',
+        match: ['admin.users.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Configuraciones',
         icon: 'pi pi-cog',
         route: 'admin.settings.index',
+        match: ['admin.settings.*'],
         visible: hasRole('Admin'),
     },
 ]);
 
-const isActive = (item) => item.route && route().current(item.route);
+const isActive = (item) => {
+    if (!item.route) return false;
+
+    const patterns = item.match?.length ? item.match : [item.route];
+
+    return patterns.some((pattern) => route().current(pattern));
+};
 
 const logout = () => router.post(route('logout'));
 </script>

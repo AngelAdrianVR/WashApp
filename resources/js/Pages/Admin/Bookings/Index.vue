@@ -1,13 +1,11 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import BookingDetail from '@/Components/Bookings/BookingDetail.vue';
 import debounce from 'lodash.debounce';
 
 // PrimeVue
 import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
@@ -135,12 +133,8 @@ const changeStatus = (booking, status) => {
 };
 
 // ---------------------------------------------------------------- Detalle
-const showDetail = ref(false);
-const selectedBooking = ref(null);
-
-const openDetail = (booking) => {
-    selectedBooking.value = booking;
-    showDetail.value = true;
+const goToDetail = (booking) => {
+    router.visit(route('admin.bookings.show', booking.id));
 };
 </script>
 
@@ -284,7 +278,8 @@ const openDetail = (booking) => {
                                 <tr
                                     v-for="booking in bookings.data"
                                     :key="booking.id"
-                                    class="transition hover:bg-mist-50/60 dark:hover:bg-slate-800/40"
+                                    class="cursor-pointer transition hover:bg-mist-50/60 dark:hover:bg-slate-800/40"
+                                    @click="goToDetail(booking)"
                                 >
                                     <td class="whitespace-nowrap px-3 py-3.5 align-top">
                                         <p class="font-semibold text-mist-800 dark:text-slate-100">{{ formatDate(booking.scheduled_at) }}</p>
@@ -308,7 +303,7 @@ const openDetail = (booking) => {
                                         </p>
                                         <p class="text-xs text-mist-400 dark:text-slate-500">{{ booking.duration_minutes }} min</p>
                                     </td>
-                                    <td class="px-3 py-3.5 align-top">
+                                    <td class="px-3 py-3.5 align-top" @click.stop>
                                         <Select
                                             :modelValue="booking.employee_id"
                                             :options="activeEmployees"
@@ -333,7 +328,7 @@ const openDetail = (booking) => {
                                     <td class="hidden whitespace-nowrap px-3 py-3.5 text-right align-top font-semibold text-mist-800 2xl:table-cell dark:text-slate-100">
                                         {{ formatCurrency(booking.total_price) }}
                                     </td>
-                                    <td class="px-3 py-3.5 align-top">
+                                    <td class="px-3 py-3.5 align-top" @click.stop>
                                         <div class="flex items-center justify-end gap-1">
                                             <Button
                                                 icon="pi pi-eye"
@@ -342,7 +337,7 @@ const openDetail = (booking) => {
                                                 size="small"
                                                 severity="secondary"
                                                 aria-label="Ver detalle"
-                                                @click="openDetail(booking)"
+                                                @click="goToDetail(booking)"
                                             />
                                             <Button
                                                 v-if="nextStatus(booking.status)"
@@ -405,7 +400,7 @@ const openDetail = (booking) => {
                             </div>
 
                             <div class="mt-3 flex flex-wrap gap-2">
-                                <Button label="Detalle" icon="pi pi-eye" text size="small" severity="secondary" @click="openDetail(booking)" />
+                                <Button label="Detalle" icon="pi pi-eye" text size="small" severity="secondary" @click="goToDetail(booking)" />
                                 <Button
                                     v-if="nextStatus(booking.status)"
                                     :label="nextStatus(booking.status).label"
@@ -465,21 +460,5 @@ const openDetail = (booking) => {
                 </div>
             </div>
         </div>
-
-        <!-- Detalle -->
-        <Dialog v-model:visible="showDetail" modal header="Detalle del servicio" :style="{ width: '34rem' }" :breakpoints="{ '640px': '96vw' }">
-            <BookingDetail
-                v-if="selectedBooking"
-                :booking="selectedBooking"
-                :employees="activeEmployees"
-                can-manage
-                status-route="admin.bookings.updateStatus"
-                assign-route="admin.bookings.assignEmployee"
-                @changed="showDetail = false"
-            />
-            <div class="mt-4 flex justify-end">
-                <Button label="Cerrar" text severity="secondary" size="small" @click="showDetail = false" />
-            </div>
-        </Dialog>
     </AppLayout>
 </template>

@@ -4,7 +4,9 @@ use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminExpenseController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\BookingChatController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingInspectionController;
 use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\ClientProfileController;
@@ -153,6 +155,11 @@ Route::middleware([
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
         // Ruta para asignar un empleado a una reserva.
         Route::patch('bookings/{booking}/assign', [BookingController::class, 'assignEmployee'])->name('bookings.assignEmployee');
+        // Inspección del vehículo (el admin también puede levantarla).
+        Route::post('bookings/{booking}/inspection', [BookingInspectionController::class, 'store'])->name('bookings.inspection.store');
+        // Chat con el cliente.
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
 
 
         // RECOMPENSAS DE USUARIO ---------------
@@ -184,6 +191,11 @@ Route::middleware([
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         // El empleado actualiza el estado de su trabajo (ej. 'en_camino', 'completado').
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
+        // Inspección del vehículo en presencia del cliente.
+        Route::post('bookings/{booking}/inspection', [BookingInspectionController::class, 'store'])->name('bookings.inspection.store');
+        // Chat con el cliente asignado.
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
 
         // HISTORIAL DE SERVICIOS REALIZADOS -----
         // --------------------------------------
@@ -218,6 +230,15 @@ Route::middleware([
         Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
         Route::patch('bookings/{booking}/update-notes', [BookingController::class, 'updateNotes'])->name('bookings.updateNotes');
         Route::post('bookings/{booking}/review', [ReviewController::class, 'store'])->name('bookings.review');
+        // Confirmación del cliente: inspección, servicio terminado y propina.
+        Route::patch('bookings/{booking}/inspection/confirm', [BookingInspectionController::class, 'confirm'])->name('bookings.inspection.confirm');
+        Route::patch('bookings/{booking}/confirm-completion', [BookingController::class, 'confirmCompletion'])->name('bookings.confirmCompletion');
+        Route::post('bookings/{booking}/tip', [BookingController::class, 'submitTip'])->name('bookings.tip');
+
+        // CHAT CON EL COLABORADOR --------------
+        // --------------------------------------
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
 
 
         // MIS RECOMPENSAS ----------------------
