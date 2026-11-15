@@ -33,7 +33,7 @@ const formatTime = (value) => {
 
 const statusMeta = (status) =>
     ({
-        pending: { label: 'Pendiente', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+        pending: { label: 'Por asignar', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
         confirmed: { label: 'Confirmada', classes: 'bg-cloud-100 text-cloud-700 dark:bg-cloud-900/40 dark:text-cloud-300' },
         on_way: { label: 'En camino', classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
         in_progress: { label: 'En servicio', classes: 'bg-sage-100 text-sage-700 dark:bg-sage-900/40 dark:text-sage-300' },

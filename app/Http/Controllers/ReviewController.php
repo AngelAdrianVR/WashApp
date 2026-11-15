@@ -4,11 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Review;
+use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
+    /**
+     * Puntos extra por calificar el servicio.
+     */
+    private const POINTS_RATING = 10;
+
+    /**
+     * Puntos extra por dejar un comentario.
+     */
+    private const POINTS_COMMENT = 5;
+
     /**
      * Guarda (o actualiza) la opinión del cliente sobre un servicio finalizado.
      */
@@ -39,6 +50,23 @@ class ReviewController extends Controller
             ]
         );
 
+        $points = 0;
+
+        if ($review->wasRecentlyCreated) {
+            $points = self::POINTS_RATING + (filled($validated['comment'] ?? null) ? self::POINTS_COMMENT : 0);
+
+            User::whereKey($user->id)->increment('points', $points);
+
+            UserNotification::create([
+                'user_id' => $user->id,
+                'icon' => 'pi pi-star-fill',
+                'tone' => 'sand',
+                'title' => '¡Gracias por calificar!',
+                'text' => "Sumaste {$points} pts por tu opinión del servicio #{$booking->id}.",
+                'url' => route('client.rewards.index'),
+            ]);
+        }
+
         if ($booking->employee_id) {
             $services = $booking->services()->pluck('name')->take(3)->implode(' + ') ?: 'Servicio WashApp';
 
@@ -52,6 +80,10 @@ class ReviewController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', '¡Gracias! Tu opinión quedó registrada.');
+        $message = $points > 0
+            ? "¡Gracias! Tu opinión quedó registrada y sumaste {$points} puntos."
+            : '¡Gracias! Tu opinión quedó registrada.';
+
+        return redirect()->back()->with('success', $message);
     }
 }

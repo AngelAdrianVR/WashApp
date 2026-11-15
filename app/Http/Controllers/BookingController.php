@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Models\VehicleCategory;
 use App\Services\BookingNotifier;
 use App\Services\BookingSummaryPresenter;
@@ -353,7 +354,8 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        // 4. Lógica para encontrar un empleado disponible
+        // 4. Verificamos que exista personal disponible en ese horario (la asignación
+        //    la realiza un administrador desde el panel).
         $availableEmployeeId = $this->findAvailableEmployee($requestedStartTime, $totalDuration);
 
         if (! $availableEmployeeId) {
@@ -375,9 +377,10 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => $user->id,
                 'car_id' => $selectedCar?->id,
-                'employee_id' => $availableEmployeeId,
+                'employee_id' => null,
                 'scheduled_at' => $requestedStartTime,
                 'status' => 'pending',
+                'assignment_requested_at' => now(),
                 'total_price' => $selectedServices->sum(fn (Service $service) => $service->priceFor($vehicleCategoryId)),
                 'payment_method' => $validatedData['payment_method'] ?? 'Efectivo',
                 'address' => $address,
@@ -414,7 +417,10 @@ class BookingController extends Controller
 
         BookingNotifier::bookingCreated($booking, Auth::id());
 
-        return redirect()->route('client.bookings.index')->with('success', '¡Tu cita ha sido agendada exitosamente!');
+        return redirect()
+            ->route('client.bookings.show', $booking)
+            ->with('success', '¡Tu cita ha sido agendada exitosamente!')
+            ->with('booking_created', $booking->id);
     }
 
     /**
@@ -520,6 +526,8 @@ class BookingController extends Controller
             'longitude' => $booking->longitude !== null ? (float) $booking->longitude : null,
             'scheduled_at' => $booking->scheduled_at?->toIso8601String(),
             'ends_at' => $booking->endsAt()?->toIso8601String(),
+            'started_at' => $booking->started_at?->toIso8601String(),
+            'completed_at' => $booking->completed_at?->toIso8601String(),
             'is_today' => $booking->scheduled_at?->isToday() ?? false,
             'is_overdue' => $booking->scheduled_at?->lt(now()) ?? false,
             'status' => $booking->status,
@@ -533,15 +541,196 @@ class BookingController extends Controller
             'employee_id' => $booking->employee_id,
             'employee_name' => $booking->employee?->name,
             'employee_avatar' => $booking->employee?->avatar_url ?: $booking->employee?->profile_photo_url,
+            'employee' => $this->employeePayload($booking->employee),
             'duration_minutes' => $booking->durationMinutes(),
+            'actual_duration_minutes' => $booking->actualDurationMinutes(),
             'review' => BookingSummaryPresenter::review($booking),
+            'folio' => $booking->folio(),
+            'is_awaiting_assignment' => $booking->isAwaitingAssignment(),
+            'assignment_requested_at' => $booking->assignment_requested_at?->toIso8601String(),
+            'arrival_eta_minutes' => $booking->arrival_eta_minutes,
+            'en_route_at' => $booking->en_route_at?->toIso8601String(),
+            'arrival_window_start' => $booking->arrival_window_start?->toIso8601String(),
+            'arrival_window_end' => $booking->arrival_window_end?->toIso8601String(),
+            'arrival_window_label' => $booking->arrivalWindowLabel(),
+            'arrived_at' => $booking->arrived_at?->toIso8601String(),
+            'completion_available_at' => $booking->completionAvailableAt()?->toIso8601String(),
+            'completion_lock_minutes' => Booking::COMPLETION_LOCK_MINUTES,
+            'can_be_completed' => $booking->canBeCompleted(),
+            'client_confirmed_at' => $booking->client_confirmed_at?->toIso8601String(),
+            'air_freshener' => $booking->air_freshener,
+            'air_freshener_accepted' => $booking->air_freshener_accepted,
+            'tip_amount' => $booking->tip_amount !== null ? round((float) $booking->tip_amount, 2) : null,
+            'tip_method' => $booking->tip_method,
+            'points_awarded' => (int) $booking->points_awarded,
+            'inspection' => $this->inspectionPayload($booking),
+            'client' => $this->clientPayload($booking),
+            'car' => $this->carPayload($booking),
             'services' => $booking->services->map(fn (Service $service) => [
                 'id' => $service->id,
                 'name' => $service->name,
                 'duration_minutes' => (int) $service->duration_minutes,
                 'price' => round((float) ($service->pivot->price_at_booking ?? $service->price), 2),
+                'points' => (int) $service->points,
             ])->values()->all(),
         ];
+    }
+
+    /**
+     * Información general del colaborador (para el cliente y el panel).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function employeePayload(?User $employee): ?array
+    {
+        if (! $employee) {
+            return null;
+        }
+
+        $completed = $employee->bookingsAsEmployee()->where('status', 'completed')->count();
+        $average = $employee->reviewsReceived()->avg('rating');
+
+        return [
+            'id' => $employee->id,
+            'name' => $employee->name,
+            'avatar' => $employee->avatar_url ?: $employee->profile_photo_url,
+            'phone' => $employee->phone_number,
+            'rating' => $average ? round((float) $average, 1) : null,
+            'reviews_count' => $employee->reviewsReceived()->count(),
+            'completed_services' => $completed,
+            'member_since' => $employee->created_at?->locale('es')->translatedFormat('M Y'),
+        ];
+    }
+
+    /**
+     * Información general del cliente para decidir la asignación.
+     *
+     * @return array<string, mixed>
+     */
+    private function clientPayload(Booking $booking): array
+    {
+        $client = $booking->client;
+
+        if (! $client) {
+            return [
+                'is_guest' => true,
+                'name' => $booking->guest_name ?? 'Cliente invitado',
+                'phone' => $booking->guest_phone,
+                'email' => $booking->guest_email,
+                'avatar' => null,
+                'points' => 0,
+                'member_since' => null,
+                'total_bookings' => 1,
+                'completed_bookings' => 0,
+                'cancelled_bookings' => 0,
+                'cars_count' => 0,
+            ];
+        }
+
+        return [
+            'is_guest' => false,
+            'name' => $client->name,
+            'phone' => $client->phone_number,
+            'email' => $client->email,
+            'avatar' => $client->avatar_url,
+            'points' => (int) $client->points,
+            'member_since' => $client->created_at?->locale('es')->translatedFormat('M Y'),
+            'total_bookings' => $client->bookingsAsClient()->count(),
+            'completed_bookings' => $client->bookingsAsClient()->where('status', 'completed')->count(),
+            'cancelled_bookings' => $client->bookingsAsClient()->where('status', 'cancelled')->count(),
+            'cars_count' => $client->cars()->count(),
+        ];
+    }
+
+    /**
+     * Vehículo del servicio: datos del coche registrado y sus fotos por lado.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function carPayload(Booking $booking): ?array
+    {
+        $car = $booking->car;
+
+        if ($car) {
+            $car->loadMissing('vehicleCategory');
+            $catalog = $car->toCatalogArray();
+            $catalog['label'] = trim(implode(' ', array_filter([$car->brand, $car->model])));
+            $catalog['has_photos'] = collect($catalog['photos'])->contains(fn ($photo) => (bool) $photo['url']);
+
+            return $catalog;
+        }
+
+        if (! $booking->vehicle_brand && ! $booking->vehicle_model) {
+            return null;
+        }
+
+        return [
+            'id' => null,
+            'brand' => $booking->vehicle_brand,
+            'model' => $booking->vehicle_model,
+            'year' => null,
+            'color' => null,
+            'plates' => null,
+            'vehicle_category_id' => $booking->vehicle_category_id,
+            'vehicle_category' => null,
+            'label' => $booking->vehicleLabel(),
+            'photos' => [],
+            'has_photos' => false,
+        ];
+    }
+
+    /**
+     * Inspección visual del vehículo registrada por el colaborador.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function inspectionPayload(Booking $booking): ?array
+    {
+        if (! $booking->relationLoaded('inspection') || ! $booking->inspection) {
+            return null;
+        }
+
+        $inspection = $booking->inspection;
+
+        return [
+            'markers' => $inspection->markers ?? [],
+            'notes' => $inspection->notes,
+            'confirmed' => $inspection->isConfirmed(),
+            'confirmed_at' => $inspection->client_confirmed_at?->toIso8601String(),
+            'updated_at' => $inspection->updated_at?->toIso8601String(),
+            'registered_by' => $inspection->relationLoaded('user') ? $inspection->user?->name : null,
+        ];
+    }
+
+    /**
+     * Colaboradores activos con contexto para elegir al mejor candidato.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function employeeDirectory(): array
+    {
+        return User::query()
+            ->where('role', 'Empleado')
+            ->where('is_active', true)
+            ->withCount([
+                'bookingsAsEmployee as active_services' => fn ($query) => $query->whereIn('status', ['confirmed', 'on_way', 'in_progress']),
+                'bookingsAsEmployee as completed_services' => fn ($query) => $query->where('status', 'completed'),
+            ])
+            ->withAvg('reviewsReceived as rating_average', 'rating')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $employee) => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'avatar' => $employee->avatar_url ?: $employee->profile_photo_url,
+                'phone' => $employee->phone_number,
+                'email' => $employee->email,
+                'rating' => $employee->rating_average ? round((float) $employee->rating_average, 1) : null,
+                'active_services' => (int) $employee->active_services,
+                'completed_services' => (int) $employee->completed_services,
+            ])
+            ->values()
+            ->all();
     }
 
     public function show(Booking $booking)
@@ -556,16 +745,12 @@ class BookingController extends Controller
             abort(403, 'No autorizado para ver esta página.');
         }
 
-        $booking->load('services', 'employee', 'client', 'review');
+        $booking->load('services', 'employee', 'client', 'review', 'inspection.user', 'car.media', 'car.vehicleCategory');
 
         if ($user->role === 'Admin') {
             return Inertia::render('Admin/Bookings/Show', [
                 'booking' => $this->bookingListItem($booking),
-                'employees' => User::query()
-                    ->where('role', 'Empleado')
-                    ->where('is_active', true)
-                    ->orderBy('name')
-                    ->get(['id', 'name']),
+                'employees' => $this->employeeDirectory(),
             ]);
         }
 
@@ -748,10 +933,15 @@ class BookingController extends Controller
             return back()->withErrors(['employee_id' => 'El empleado ya tiene otra cita en ese horario.']);
         }
 
-        $booking->update(['employee_id' => $validated['employee_id']]);
-        BookingNotifier::employeeAssigned($booking->refresh()->load('client'), Auth::id());
+        $booking->update([
+            'employee_id' => $validated['employee_id'],
+            'status' => in_array($booking->status, ['pending'], true) ? 'confirmed' : $booking->status,
+            'assignment_requested_at' => $booking->assignment_requested_at ?? now(),
+        ]);
 
-        return back()->with('success', 'Empleado asignado correctamente.');
+        BookingNotifier::employeeAssigned($booking->refresh()->load('client', 'employee'), Auth::id());
+
+        return back()->with('success', 'Colaborador asignado y cliente notificado.');
     }
 
     /**
@@ -761,6 +951,8 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['pending', 'confirmed', 'on_way', 'in_progress', 'completed', 'cancelled'])],
+            'eta_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
+            'cancel_reason' => ['nullable', 'string', 'min:5', 'max:255'],
         ]);
 
         $user = Auth::user();
@@ -769,24 +961,157 @@ class BookingController extends Controller
         }
 
         $status = $validated['status'];
+        $booking->loadMissing('inspection');
+
+        if (in_array($status, ['on_way', 'in_progress', 'completed'], true) && ! $booking->employee_id) {
+            return back()->with('error', 'Asigna primero a un colaborador antes de avanzar el servicio.');
+        }
+
+        if ($status === 'on_way' && empty($validated['eta_minutes'])) {
+            return back()->withErrors(['eta_minutes' => 'Indica en cuántos minutos llegará el colaborador.']);
+        }
+
+        if ($status === 'completed' && $booking->user_id && $booking->inspection && ! $booking->inspection->isConfirmed()) {
+            return back()->with('error', 'El cliente debe confirmar la inspección del vehículo antes de finalizar.');
+        }
+
+        // El colaborador no puede cerrar el servicio antes de 15 minutos desde su llegada
+        // (evita cierres accidentales o reportes de tiempo irreales).
+        if ($status === 'completed' && $user->role === 'Empleado' && ! $booking->canBeCompleted()) {
+            return back()->with('error', 'Debes esperar al menos '
+                . Booking::COMPLETION_LOCK_MINUTES
+                . ' minutos desde tu llegada para finalizar el servicio.');
+        }
+
+        // Cancelar requiere explicar el motivo para dejar rastro en la reserva.
+        if ($status === 'cancelled' && $user->role === 'Empleado' && trim((string) ($validated['cancel_reason'] ?? '')) === '') {
+            return back()->withErrors(['cancel_reason' => 'Escribe el motivo de la cancelación.']);
+        }
+
         $attributes = ['status' => $status];
 
-        if (in_array($status, ['on_way', 'in_progress'], true) && ! $booking->started_at) {
-            $attributes['started_at'] = now();
+        if ($status === 'on_way') {
+            $eta = (int) $validated['eta_minutes'];
+            $arrivalStart = now()->addMinutes($eta);
+
+            $attributes['arrival_eta_minutes'] = $eta;
+            $attributes['en_route_at'] = $booking->en_route_at ?? now();
+            $attributes['arrival_window_start'] = $arrivalStart;
+            $attributes['arrival_window_end'] = $arrivalStart->copy()->addMinutes(7);
+            $attributes['started_at'] = $booking->started_at ?? now();
+        }
+
+        if ($status === 'in_progress') {
+            $attributes['started_at'] = $booking->started_at ?? now();
+            $attributes['arrived_at'] = $booking->arrived_at ?? now();
         }
 
         if ($status === 'completed') {
-            $attributes['started_at'] = $booking->started_at ?? now();
+            $attributes['started_at'] = $booking->started_at ?? $booking->arrived_at ?? now();
+            $attributes['arrived_at'] = $booking->arrived_at ?? $attributes['started_at'];
             $attributes['completed_at'] = $booking->completed_at ?? now();
-        } elseif ($booking->completed_at) {
+        } elseif ($booking->completed_at && $status !== 'completed') {
             // Si la cita vuelve a un estado abierto, deja de contar como ingreso.
             $attributes['completed_at'] = null;
         }
 
+        if ($status === 'cancelled') {
+            $reason = trim((string) ($validated['cancel_reason'] ?? ''));
+            $attributes['cancel_reason'] = $reason !== '' ? $reason : 'Cancelada por el administrador';
+        }
+
         $booking->update($attributes);
-        BookingNotifier::statusChanged($booking->refresh(), $status, Auth::id());
+
+        BookingNotifier::statusChanged(
+            $booking->refresh()->load('client', 'employee', 'inspection'),
+            $status,
+            Auth::id()
+        );
 
         return back()->with('success', 'Estado de la reserva actualizado.');
+    }
+
+    /**
+     * El cliente confirma que el servicio terminó y si acepta el aromatizante de cortesía.
+     */
+    public function confirmCompletion(Request $request, Booking $booking)
+    {
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para confirmar esta reserva.');
+        }
+
+        if ($booking->status !== 'completed') {
+            return back()->with('error', 'El colaborador todavía no marca el servicio como terminado.');
+        }
+
+        $validated = $request->validate([
+            'air_freshener_accepted' => ['required', 'boolean'],
+        ], [
+            'air_freshener_accepted.required' => 'Indícanos si deseas el aromatizante de cortesía.',
+        ]);
+
+        $attributes = ['client_confirmed_at' => $booking->client_confirmed_at ?? now()];
+        $points = 0;
+
+        if (! $booking->client_confirmed_at && (int) $booking->points_awarded === 0) {
+            $booking->loadMissing('services');
+            $points = $booking->servicePoints();
+            $attributes['points_awarded'] = $points;
+        }
+
+        $attributes['air_freshener_accepted'] = (bool) $validated['air_freshener_accepted'];
+        $attributes['air_freshener'] = $validated['air_freshener_accepted'] ? 'Aromatizante de cortesía' : null;
+
+        $booking->update($attributes);
+
+        if ($points > 0 && $booking->user_id) {
+            User::whereKey($booking->user_id)->increment('points', $points);
+
+            UserNotification::create([
+                'user_id' => $booking->user_id,
+                'icon' => 'pi pi-star-fill',
+                'tone' => 'sand',
+                'title' => '¡Ganaste puntos!',
+                'text' => "Sumaste {$points} pts por tu servicio #{$booking->id}.",
+                'url' => route('client.rewards.index'),
+            ]);
+        }
+
+        BookingNotifier::serviceConfirmed($booking->refresh()->load('client', 'employee'));
+
+        return back()->with('success', $points > 0
+            ? "¡Gracias! Confirmamos tu servicio y sumaste {$points} puntos."
+            : '¡Gracias! Tu servicio quedó confirmado.');
+    }
+
+    /**
+     * El cliente registra una propina digital o en efectivo.
+     */
+    public function submitTip(Request $request, Booking $booking)
+    {
+        if ($booking->user_id !== Auth::id()) {
+            abort(403, 'No autorizado para registrar una propina en esta reserva.');
+        }
+
+        if ($booking->status !== 'completed') {
+            return back()->with('error', 'Solo puedes dejar propina al finalizar el servicio.');
+        }
+
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0', 'max:5000'],
+            'method' => ['required', Rule::in(['digital', 'cash'])],
+        ]);
+
+        $booking->update([
+            'tip_amount' => $validated['amount'],
+            'tip_method' => $validated['method'],
+        ]);
+
+        if ((float) $validated['amount'] > 0) {
+            BookingNotifier::tipReceived($booking->refresh()->load('client', 'employee'));
+        }
+
+        return back()->with('success', '¡Gracias por tu propina!');
     }
 
     /**
@@ -943,10 +1268,10 @@ class BookingController extends Controller
             $validated['state'] ?? null,
         ])));
 
-        $booking = DB::transaction(function () use ($validated, $user, $scheduledAt, $employeeId, $selectedServices, $categoryId, $address) {
+        $booking = DB::transaction(function () use ($validated, $user, $scheduledAt, $selectedServices, $categoryId, $address) {
             $booking = Booking::create([
                 'user_id' => $user?->id,
-                'employee_id' => $employeeId,
+                'employee_id' => null,
                 'guest_name' => $user ? null : ($validated['name'] ?? null),
                 'guest_phone' => $user ? null : ($validated['phone'] ?? null),
                 'guest_email' => $user ? null : ($validated['email'] ?? null),
@@ -959,7 +1284,8 @@ class BookingController extends Controller
                 'latitude' => $validated['latitude'] ?? null,
                 'longitude' => $validated['longitude'] ?? null,
                 'scheduled_at' => $scheduledAt,
-                'status' => 'confirmed',
+                'status' => 'pending',
+                'assignment_requested_at' => now(),
                 'payment_method' => $validated['payment_method'] ?? 'Tarjeta',
                 'total_price' => $selectedServices->sum(fn (Service $service) => $service->priceFor($categoryId)),
                 'notes' => $validated['notes'] ?? null,
@@ -998,7 +1324,7 @@ class BookingController extends Controller
             'total' => round((float) $booking->total_price, 2),
             'duration_minutes' => $duration,
             'payment_method' => $booking->payment_method,
-        ])->with('success', 'Tu reserva quedó registrada.');
+        ])->with('success', 'Tu reserva quedó registrada.')->with('booking_created', $booking->id);
     }
 
     /**

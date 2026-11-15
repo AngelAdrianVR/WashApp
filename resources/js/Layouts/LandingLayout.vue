@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Link, Head, usePage } from '@inertiajs/vue3';
+import { useScrollMotion } from '@/Composables/useScrollMotion';
 
 // --- Props ---
 const props = defineProps({
@@ -31,6 +32,9 @@ const navigation = ref([
 
 const isMobileMenuOpen = ref(false);
 const isScrolled = ref(false);
+const scrollProgress = ref(0);
+
+const { refresh: refreshMotion } = useScrollMotion();
 
 const toggleMobileMenu = () => {
     isMobileMenuOpen.value = !isMobileMenuOpen.value;
@@ -38,6 +42,9 @@ const toggleMobileMenu = () => {
 
 const handleScroll = () => {
     isScrolled.value = window.scrollY > 12;
+
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    scrollProgress.value = scrollable > 0 ? Math.min(100, Math.max(0, (window.scrollY / scrollable) * 100)) : 0;
 };
 
 let revealObserver = null;
@@ -78,6 +85,7 @@ onMounted(() => {
     handleScroll();
     nextTick(() => {
         observeReveals();
+        refreshMotion();
 
         mutationObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => mutation.addedNodes.forEach(observeNewNodes));
@@ -97,7 +105,10 @@ watch(
     () => page.url,
     () => {
         isMobileMenuOpen.value = false;
-        nextTick(observeReveals);
+        nextTick(() => {
+            observeReveals();
+            refreshMotion();
+        });
     }
 );
 </script>
@@ -123,6 +134,14 @@ watch(
     </Head>
 
     <div class="wa-page min-h-screen">
+        <!-- Progreso de lectura -->
+        <div class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]" aria-hidden="true">
+            <div
+                class="h-full rounded-r-full bg-gradient-to-r from-cloud-600 via-cloud-400 to-sage-500 transition-[width] duration-150 ease-out"
+                :style="{ width: `${scrollProgress}%` }"
+            ></div>
+        </div>
+
         <!-- =========== Header / Navigation =========== -->
         <header class="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
             <nav

@@ -17,7 +17,7 @@ const toast = useToast();
 
 const statusOptions = [
     { value: '', label: 'Todas' },
-    { value: 'pending', label: 'Pendientes' },
+    { value: 'pending', label: 'Por asignar' },
     { value: 'confirmed', label: 'Confirmadas' },
     { value: 'on_way', label: 'En camino' },
     { value: 'in_progress', label: 'En progreso' },
@@ -184,7 +184,7 @@ const formatCurrency = (value) =>
 
 const statusInfo = (status) => {
     const statuses = {
-        pending: { text: 'Pendiente', class: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300', dot: 'bg-amber-500' },
+        pending: { text: 'Por asignar', class: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300', dot: 'bg-amber-500' },
         confirmed: { text: 'Confirmada', class: 'bg-cloud-50 text-cloud-700 dark:bg-cloud-500/15 dark:text-cloud-300', dot: 'bg-cloud-500' },
         on_way: { text: 'En camino', class: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300', dot: 'bg-indigo-500' },
         in_progress: { text: 'En progreso', class: 'bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-300', dot: 'bg-violet-500' },

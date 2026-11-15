@@ -90,15 +90,15 @@ html {
   }
 
   .wa-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-cloud-600 text-white shadow-soft hover:-translate-y-0.5 hover:bg-cloud-700 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-cloud-600 text-white shadow-soft hover:-translate-y-0.5 hover:bg-cloud-700 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60;
   }
 
   .wa-btn-sage {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-sage-500 text-white shadow-soft hover:-translate-y-0.5 hover:bg-sage-600 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 bg-sage-500 text-white shadow-soft hover:-translate-y-0.5 hover:bg-sage-600 hover:shadow-lift active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60;
   }
 
   .wa-btn-soft {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 border border-mist-200 bg-white/80 text-mist-700 hover:border-mist-300 hover:bg-white hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition-all duration-300 border border-mist-200 bg-white/80 text-mist-700 hover:border-mist-300 hover:bg-white hover:text-mist-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-cloud-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-white disabled:pointer-events-none disabled:opacity-60;
   }
 
   .wa-btn-ghost {
@@ -194,6 +194,57 @@ html {
 
   .wa-marquee {
     animation: none;
+  }
+}
+
+/* ============================================================
+   Movimiento ligado al scroll (Composables/useScrollMotion.js)
+   --p va de 0 (bloque fuera de foco) a 1 (bloque en foco)
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
+}
+
+[data-motion] {
+  --p: 1;
+}
+
+[data-motion='rise'] {
+  opacity: calc(0.05 + var(--p) * 0.95);
+  transform: translate3d(0, calc((1 - var(--p)) * 46px), 0);
+}
+
+[data-motion='card'] {
+  opacity: calc(0.08 + var(--p) * 0.92);
+  transform: translate3d(0, calc((1 - var(--p)) * 58px), 0) scale(calc(0.94 + var(--p) * 0.06));
+}
+
+[data-motion-parallax] {
+  --parallax: 0px;
+  transform: translate3d(0, var(--parallax), 0);
+  will-change: transform;
+}
+
+/* Ventana del recorrido horizontal de "Cómo funciona" */
+.wa-steps-viewport {
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 93%, transparent);
+  mask-image: linear-gradient(to right, #000 0%, #000 93%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-motion],
+  [data-motion='rise'],
+  [data-motion='card'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-motion-parallax] {
+    transform: none;
   }
 }
 

@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import LandingLayout from '@/Layouts/LandingLayout.vue';
 import ScrollCarousel from '@/Components/Landing/ScrollCarousel.vue';
+import ScrollSteps from '@/Components/Landing/ScrollSteps.vue';
+import HeroShowcase from '@/Components/Landing/HeroShowcase.vue';
 import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -18,7 +20,7 @@ const prefersReducedMotion =
    Hero: ubicación animada
    --------------------------------------------------------- */
 const locations = ['tu casa', 'tu oficina', 'tu edificio', 'tu estacionamiento'];
-const typedLocation = ref('');
+const typedLocation = ref(locations[0]);
 
 let typingTimer = null;
 let locationIndex = 0;
@@ -92,7 +94,9 @@ onMounted(() => {
         return;
     }
 
-    typingTimer = setTimeout(typeLoop, 600);
+    charIndex = locations[0].length;
+    isDeleting = true;
+    typingTimer = setTimeout(typeLoop, 1800);
 });
 
 onUnmounted(() => {
@@ -121,6 +125,33 @@ const advantages = [
         description: 'Agenda, paga y recibe el reporte fotográfico desde tu celular. Sin efectivo.',
         icon: 'phone',
         tone: 'sand',
+    },
+];
+
+const steps = [
+    {
+        title: 'Elige tu paquete',
+        description: 'Lavado en seco o con agua: compara tiempos, precios y extras desde la app.',
+        icon: 'fa-solid fa-layer-group',
+        tone: 'bg-cloud-100 text-cloud-600',
+    },
+    {
+        title: 'Agenda en segundos',
+        description: 'Elige fecha, hora y dirección. La confirmación llega al instante, sin llamadas.',
+        icon: 'fa-regular fa-calendar-check',
+        tone: 'bg-sage-100 text-sage-600',
+    },
+    {
+        title: 'Llegamos a ti',
+        description: 'Un operador verificado lava donde estés con productos biodegradables.',
+        icon: 'fa-solid fa-location-dot',
+        tone: 'bg-sand-100 text-sand-600',
+    },
+    {
+        title: 'Acumula y canjea',
+        description: 'Cada servicio suma puntos que cambias por lavados y extras gratis.',
+        icon: 'fa-solid fa-gift',
+        tone: 'bg-cloud-100 text-cloud-600',
     },
 ];
 
@@ -185,9 +216,9 @@ const toneClasses = {
 <template>
     <LandingLayout title="Inicio">
         <!-- ==================== HERO ==================== -->
-        <section class="relative overflow-hidden px-3 sm:px-5">
+        <section class="relative overflow-hidden px-3 pt-2 sm:px-5">
             <div class="mx-auto max-w-7xl">
-                <div class="grid items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-16">
+                <div class="grid items-center gap-10 pb-8 pt-2 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12 lg:pb-10 lg:pt-6">
                     <!-- Copy -->
                     <div data-reveal>
                         <span class="wa-eyebrow">
@@ -244,40 +275,26 @@ const toneClasses = {
                     </div>
 
                     <!-- Visual -->
-                    <div class="relative" data-reveal>
-                        <div class="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-sage-200/50 blur-2xl"></div>
-                        <div class="absolute -bottom-8 right-2 h-32 w-32 rounded-full bg-cloud-200/60 blur-3xl"></div>
-
-                        <div class="relative wa-card p-3">
-                            <div class="overflow-hidden rounded-[1.35rem]">
-                                <img
-                                    src="/images/auto-limpio-1.png"
-                                    alt="Vehículo recién lavado por WashApp"
-                                    class="h-[280px] w-full object-cover sm:h-[360px]"
-                                    fetchpriority="high"
-                                />
-                            </div>
-
-                            <div class="absolute -left-2 top-6 w-[210px] rounded-2xl border border-white/70 bg-white/85 p-4 shadow-lift backdrop-blur-md sm:-left-8">
-                                <div class="flex items-center gap-2">
-                                    <span class="relative flex h-2.5 w-2.5">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sage-400 opacity-70"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-sage-500"></span>
-                                    </span>
-                                    <span class="text-[11px] font-semibold uppercase tracking-wider text-mist-400">En servicio</span>
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-mist-900">Lavado ecológico</p>
-                                <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-mist-100">
-                                    <div class="h-full w-2/3 rounded-full bg-gradient-to-r from-sage-400 to-cloud-400"></div>
-                                </div>
-                            </div>
-
-                            <div class="absolute -bottom-6 right-2 rounded-2xl border border-white/70 bg-sage-600/95 px-4 py-3 text-white shadow-lift backdrop-blur-md sm:right-6">
-                                <p class="text-[11px] font-medium uppercase tracking-wider text-sage-100">Agua por lavado</p>
-                                <p class="text-xl font-semibold">15 litros</p>
-                            </div>
-                        </div>
+                    <div data-reveal>
+                        <HeroShowcase />
                     </div>
+                </div>
+
+                <!-- Indicador de scroll -->
+                <div class="flex justify-center pb-5">
+                    <a
+                        href="#como-funciona"
+                        class="group inline-flex flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-mist-400 transition hover:text-mist-700"
+                    >
+                        <span>Descubre cómo funciona</span>
+                        <span
+                            class="grid h-9 w-9 place-items-center rounded-full border border-mist-200 bg-white/70 text-mist-500 transition group-hover:border-cloud-300 group-hover:text-cloud-600"
+                        >
+                            <svg class="h-4 w-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M6 13l6 6 6-6" />
+                            </svg>
+                        </span>
+                    </a>
                 </div>
             </div>
         </section>
@@ -312,23 +329,27 @@ const toneClasses = {
                     <div
                         v-for="(advantage, index) in advantages"
                         :key="advantage.title"
-                        class="wa-card p-6 transition-transform duration-300 hover:-translate-y-1"
-                        data-reveal
-                        :style="{ transitionDelay: `${index * 80}ms` }"
+                        data-motion="card"
+                        :data-motion-delay="index * 0.08"
                     >
-                        <span class="grid h-11 w-11 place-items-center rounded-2xl" :class="toneClasses[advantage.tone]">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
-                                <template v-for="(d, i) in iconPaths[advantage.icon].split('|')" :key="i">
-                                    <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
-                                </template>
-                            </svg>
-                        </span>
-                        <h3 class="mt-5 text-lg font-semibold text-mist-900">{{ advantage.title }}</h3>
-                        <p class="mt-2 text-sm leading-relaxed text-mist-500">{{ advantage.description }}</p>
+                        <div class="wa-card h-full p-6 transition-transform duration-300 hover:-translate-y-1">
+                            <span class="grid h-11 w-11 place-items-center rounded-2xl" :class="toneClasses[advantage.tone]">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                    <template v-for="(d, i) in iconPaths[advantage.icon].split('|')" :key="i">
+                                        <path stroke-linecap="round" stroke-linejoin="round" :d="d" />
+                                    </template>
+                                </svg>
+                            </span>
+                            <h3 class="mt-5 text-lg font-semibold text-mist-900">{{ advantage.title }}</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-mist-500">{{ advantage.description }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- ==================== CÓMO FUNCIONA ==================== -->
+        <ScrollSteps id="como-funciona" :steps="steps" title="Tu auto impecable en cuatro movimientos" />
 
         <!-- ==================== SERVICIOS ==================== -->
         <section class="px-3 pt-16 sm:px-5 sm:pt-20">
@@ -401,7 +422,7 @@ const toneClasses = {
             <div class="mx-auto max-w-7xl">
                 <div
                     class="relative overflow-hidden rounded-3xl border border-sage-300/60 bg-gradient-to-br from-sage-700 via-sage-600 to-cloud-800 p-8 text-white shadow-lift sm:p-10"
-                    data-reveal
+                    data-motion="rise"
                 >
                     <div class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-sage-300/20 blur-3xl"></div>
                     <div class="pointer-events-none absolute -bottom-24 left-10 h-64 w-64 rounded-full bg-cloud-300/20 blur-3xl"></div>
@@ -461,26 +482,31 @@ const toneClasses = {
                 </div>
 
                 <div v-if="rewards.length" class="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    <Link
-                        v-for="reward in rewards"
+                    <div
+                        v-for="(reward, index) in rewards"
                         :key="reward.id"
-                        :href="route('landing.premios')"
-                        class="group overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-soft backdrop-blur-md transition-transform duration-300 hover:-translate-y-1 sm:rounded-3xl"
+                        data-motion="card"
+                        :data-motion-delay="index * 0.06"
                     >
-                        <div class="relative aspect-square overflow-hidden bg-mist-100 sm:aspect-[4/3]">
-                            <img
-                                :src="reward.image_url"
-                                :alt="reward.name"
-                                loading="lazy"
-                                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                            <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-cloud-700 shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
-                                <i class="fa-solid fa-star text-[8px] text-sand-400 sm:text-[10px]"></i>
-                                {{ nf.format(reward.points_cost) }} pts
-                            </span>
-                        </div>
-                        <p class="line-clamp-2 p-3 text-sm font-semibold text-mist-900 sm:p-4 sm:text-base">{{ reward.name }}</p>
-                    </Link>
+                        <Link
+                            :href="route('landing.premios')"
+                            class="group block overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-soft backdrop-blur-md transition-transform duration-300 hover:-translate-y-1 sm:rounded-3xl"
+                        >
+                            <div class="relative aspect-square overflow-hidden bg-mist-100 sm:aspect-[4/3]">
+                                <img
+                                    :src="reward.image_url"
+                                    :alt="reward.name"
+                                    loading="lazy"
+                                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-cloud-700 shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
+                                    <i class="fa-solid fa-star text-[8px] text-sand-400 sm:text-[10px]"></i>
+                                    {{ nf.format(reward.points_cost) }} pts
+                                </span>
+                            </div>
+                            <p class="line-clamp-2 p-3 text-sm font-semibold text-mist-900 sm:p-4 sm:text-base">{{ reward.name }}</p>
+                        </Link>
+                    </div>
                 </div>
 
                 <div
