@@ -1,10 +1,23 @@
 <?php
 
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminExpenseController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\BookingChatController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingInspectionController;
+use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\ClientProfileController;
+use App\Http\Controllers\EmployeeDashboardController;
+use App\Http\Controllers\EmployeeProfileController;
+use App\Http\Controllers\EmployeeServiceController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SalesAnalyticsController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRewardController;
@@ -24,6 +37,8 @@ Route::get('/', [LandingController::class, 'splash'])->name('splash');
 Route::get('/inicio', [LandingController::class, 'index'])->name('landing.index');
 Route::get('/servicios', [LandingController::class, 'services'])->name('landing.servicios');
 Route::get('/agendar', [LandingController::class, 'appointment'])->name('landing.agendar');
+Route::post('/agendar', [BookingController::class, 'storePublic'])->name('landing.agendar.store');
+Route::post('/agendar/horarios', [BookingController::class, 'publicAvailableTimes'])->name('landing.agendar.times');
 Route::get('/promociones', [LandingController::class, 'promotions'])->name('landing.promociones');
 Route::get('/premios', [LandingController::class, 'rewards'])->name('landing.premios');
 Route::get('/contacto', [LandingController::class, 'contact'])->name('landing.contacto');
@@ -49,17 +64,11 @@ Route::middleware([
             $user = Auth::user();
 
             if ($user->role === 'Admin') {
-                // Logic and data for the Admin dashboard
-                return Inertia::render('Admin/Dashboard', [
-                    // Pass admin-specific data here
-                ]);
+                return app(AdminDashboardController::class)->index();
             } 
             
             if ($user->role === 'Empleado') {
-                // Logic and data for the Employee dashboard
-                return Inertia::render('Employee/Dashboard', [
-                    // Pass employee-specific data here
-                ]);
+                return app(EmployeeDashboardController::class)->index(request());
             } 
             
             // --- Client Dashboard Logic ---
@@ -83,7 +92,6 @@ Route::middleware([
             // Calculate statistics for the client.
             $stats = [
                 'completedBookingsCount' => Booking::where('user_id', $user->id)->where('status', 'completed')->count(),
-                'totalSpent' => Booking::where('user_id', $user->id)->where('status', 'completed')->sum('total_price'),
                 // This assumes you have a 'rewards' relationship defined in your User model.
                 'availableRewards' => $user->rewards()->where('is_claimed', false)->count(),
             ];
@@ -101,6 +109,23 @@ Route::middleware([
 
     // --- Rutas para Administradores ---
     Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(function () {
+        // DASHBOARD ----------------------------
+        // --------------------------------------
+        Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // ANALÍTICA DE VISITAS -----------------
+        // --------------------------------------
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+        // ANÁLISIS DE VENTAS -------------------
+        // --------------------------------------
+        Route::get('sales', [SalesAnalyticsController::class, 'index'])->name('sales.index');
+
+        // GASTOS -------------------------------
+        // --------------------------------------
+        Route::resource('expenses', AdminExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
+
+
         // USUARIOS -----------------------------
         // --------------------------------------
         Route::resource('users', UserController::class);
@@ -130,12 +155,27 @@ Route::middleware([
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
         // Ruta para asignar un empleado a una reserva.
         Route::patch('bookings/{booking}/assign', [BookingController::class, 'assignEmployee'])->name('bookings.assignEmployee');
+        // Inspección del vehículo (el admin también puede levantarla).
+        Route::post('bookings/{booking}/inspection', [BookingInspectionController::class, 'store'])->name('bookings.inspection.store');
+        // Chat con el cliente.
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
 
 
         // RECOMPENSAS DE USUARIO ---------------
         // --------------------------------------
         // Gestión de las recompensas otorgadas a los usuarios.
         Route::resource('rewards', UserRewardController::class);
+
+
+        // CONFIGURACIONES ----------------------
+        // --------------------------------------
+        // Horario de operación, días de descanso y horarios especiales.
+        Route::get('settings', [BusinessSettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings', [BusinessSettingsController::class, 'update'])->name('settings.update');
+        Route::post('settings/exceptions', [BusinessSettingsController::class, 'storeException'])->name('settings.exceptions.store');
+        Route::put('settings/exceptions/{exception}', [BusinessSettingsController::class, 'updateException'])->name('settings.exceptions.update');
+        Route::delete('settings/exceptions/{exception}', [BusinessSettingsController::class, 'destroyException'])->name('settings.exceptions.destroy');
     });
 
 
@@ -151,6 +191,22 @@ Route::middleware([
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         // El empleado actualiza el estado de su trabajo (ej. 'en_camino', 'completado').
         Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
+        // Inspección del vehículo en presencia del cliente.
+        Route::post('bookings/{booking}/inspection', [BookingInspectionController::class, 'store'])->name('bookings.inspection.store');
+        // Chat con el cliente asignado.
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
+
+        // HISTORIAL DE SERVICIOS REALIZADOS -----
+        // --------------------------------------
+        Route::get('services', [EmployeeServiceController::class, 'index'])->name('services.index');
+
+        // MI PERFIL -----------------------------
+        // --------------------------------------
+        Route::get('profile', [EmployeeProfileController::class, 'show'])->name('profile.show');
+        Route::put('profile', [EmployeeProfileController::class, 'update'])->name('profile.update');
+        Route::post('profile/avatar', [EmployeeProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::delete('profile/avatar', [EmployeeProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
     });
 
 
@@ -173,12 +229,23 @@ Route::middleware([
         // Se declaran después del resource.
         Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
         Route::patch('bookings/{booking}/update-notes', [BookingController::class, 'updateNotes'])->name('bookings.updateNotes');
+        Route::post('bookings/{booking}/review', [ReviewController::class, 'store'])->name('bookings.review');
+        // Confirmación del cliente: inspección, servicio terminado y propina.
+        Route::patch('bookings/{booking}/inspection/confirm', [BookingInspectionController::class, 'confirm'])->name('bookings.inspection.confirm');
+        Route::patch('bookings/{booking}/confirm-completion', [BookingController::class, 'confirmCompletion'])->name('bookings.confirmCompletion');
+        Route::post('bookings/{booking}/tip', [BookingController::class, 'submitTip'])->name('bookings.tip');
+
+        // CHAT CON EL COLABORADOR --------------
+        // --------------------------------------
+        Route::get('bookings/{booking}/chat', [BookingChatController::class, 'index'])->name('bookings.chat.index');
+        Route::post('bookings/{booking}/chat', [BookingChatController::class, 'store'])->name('bookings.chat.store');
 
 
         // MIS RECOMPENSAS ----------------------
         // --------------------------------------
         // El cliente puede ver las recompensas/cupones que ha ganado.
         Route::get('rewards', [UserRewardController::class, 'index'])->name('rewards.index');
+        Route::post('rewards/{reward}/redeem', [UserRewardController::class, 'redeem'])->name('rewards.redeem');
 
         // MI PERFIL ----------------------------
         // --------------------------------------
@@ -194,6 +261,24 @@ Route::middleware([
         Route::delete('cars/{car}', [CarController::class, 'destroy'])->name('cars.destroy');
         Route::post('cars/{car}/photos', [CarController::class, 'storePhoto'])->name('cars.photos.store');
         Route::delete('cars/{car}/photos/{media}', [CarController::class, 'destroyPhoto'])->name('cars.photos.destroy');
+
+        // MIS DOMICILIOS -----------------------
+        // --------------------------------------
+        Route::post('addresses', [AddressController::class, 'store'])->name('addresses.store');
+        Route::put('addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
+        Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
+        Route::patch('addresses/{address}/default', [AddressController::class, 'setDefault'])->name('addresses.default');
+    });
+
+
+    // NOTIFICACIONES ---------------------------
+    // --------------------------------------
+    Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
+        Route::post('read-all', [NotificationController::class, 'markAll'])->name('markAll');
+        Route::post('read-many', [NotificationController::class, 'markMany'])->name('readMany');
+        Route::post('delete-many', [NotificationController::class, 'destroyMany'])->name('destroyMany');
+        Route::patch('{notification}/read', [NotificationController::class, 'markRead'])->name('read');
+        Route::delete('{notification}', [NotificationController::class, 'destroy'])->name('destroy');
     });
 
 

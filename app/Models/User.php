@@ -137,10 +137,50 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Notificaciones internas del panel.
+     */
+    public function userNotifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    /**
      * Vehículos registrados por el cliente.
      */
     public function cars(): HasMany
     {
         return $this->hasMany(Car::class);
+    }
+
+    /**
+     * Domicilios guardados para agilizar el agendado.
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
+     * Premios del catálogo canjeados con puntos.
+     */
+    public function rewardRedemptions(): HasMany
+    {
+        return $this->hasMany(RewardRedemption::class);
+    }
+
+    /**
+     * Opiniones recibidas como empleado.
+     */
+    public function reviewsReceived(): HasMany
+    {
+        return $this->hasMany(Review::class, 'employee_id');
+    }
+
+    /**
+     * Opiniones escritas como cliente.
+     */
+    public function reviewsWritten(): HasMany
+    {
+        return $this->hasMany(Review::class, 'user_id');
     }
 }

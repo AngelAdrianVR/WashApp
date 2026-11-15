@@ -15,8 +15,14 @@ const user = computed(() => page.props.auth.user);
 const hasRole = (role) => user.value?.role === role;
 
 const isClient = computed(() => hasRole('Cliente'));
+const isEmployee = computed(() => hasRole('Empleado'));
 
-const profileRoute = computed(() => (isClient.value ? 'client.profile.show' : 'profile.show'));
+const profileRoute = computed(() => {
+    if (isClient.value) return 'client.profile.show';
+    if (isEmployee.value) return 'employee.profile.show';
+
+    return 'profile.show';
+});
 
 const menuItems = computed(() => [
     {
@@ -31,27 +37,29 @@ const menuItems = computed(() => [
         visible: true,
     },
     {
-        label: 'Mi perfil',
-        icon: 'pi pi-user',
-        route: profileRoute.value,
-        visible: isClient.value,
-    },
-    {
         label: 'Agendar cita',
         icon: 'pi pi-calendar-plus',
         route: 'client.bookings.create',
+        match: ['client.bookings.create'],
         visible: isClient.value,
     },
     {
         label: 'Mis reservas',
         icon: 'pi pi-book',
         route: 'client.bookings.index',
+        match: [
+            'client.bookings.index',
+            'client.bookings.show',
+            'client.bookings.edit',
+            'client.bookings.update',
+        ],
         visible: isClient.value,
     },
     {
         label: 'Mis premios',
         icon: 'pi pi-gift',
         route: 'client.rewards.index',
+        match: ['client.rewards.*'],
         visible: isClient.value,
     },
     {
@@ -60,10 +68,39 @@ const menuItems = computed(() => [
         visible: hasRole('Empleado') || hasRole('Admin'),
     },
     {
-        label: 'Agenda del día',
-        icon: 'pi pi-calendar',
+        label: 'Servicios agendados',
+        icon: 'pi pi-bookmark',
+        route: 'admin.bookings.index',
+        match: ['admin.bookings.index', 'admin.bookings.show', 'admin.bookings.edit', 'admin.bookings.update'],
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Agendar cita',
+        icon: 'pi pi-calendar-plus',
+        route: 'admin.bookings.create',
+        match: ['admin.bookings.create'],
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Mis servicios',
+        icon: 'pi pi-briefcase',
         route: 'employee.bookings.index',
-        visible: hasRole('Empleado') || hasRole('Admin'),
+        match: ['employee.bookings.*'],
+        visible: hasRole('Empleado'),
+    },
+    {
+        label: 'Historial de servicios',
+        icon: 'pi pi-history',
+        route: 'employee.services.index',
+        match: ['employee.services.*'],
+        visible: isEmployee.value,
+    },
+    {
+        label: 'Mi perfil',
+        icon: 'pi pi-user',
+        route: 'employee.profile.show',
+        match: ['employee.profile.*'],
+        visible: isEmployee.value,
     },
     {
         label: 'Administración',
@@ -71,32 +108,63 @@ const menuItems = computed(() => [
         visible: hasRole('Admin'),
     },
     {
-        label: 'Reservas',
-        icon: 'pi pi-bookmark',
-        route: 'admin.bookings.index',
+        label: 'Analítica de vistas',
+        icon: 'pi pi-chart-line',
+        route: 'admin.analytics.index',
+        match: ['admin.analytics.*'],
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Análisis de ventas',
+        icon: 'pi pi-chart-bar',
+        route: 'admin.sales.index',
+        match: ['admin.sales.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Servicios',
         icon: 'pi pi-car',
         route: 'admin.services.index',
+        match: ['admin.services.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Promociones',
         icon: 'pi pi-tags',
         route: 'admin.promotions.index',
+        match: ['admin.promotions.*'],
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Gastos',
+        icon: 'pi pi-wallet',
+        route: 'admin.expenses.index',
+        match: ['admin.expenses.*'],
         visible: hasRole('Admin'),
     },
     {
         label: 'Usuarios',
         icon: 'pi pi-users',
         route: 'admin.users.index',
+        match: ['admin.users.*'],
+        visible: hasRole('Admin'),
+    },
+    {
+        label: 'Configuraciones',
+        icon: 'pi pi-cog',
+        route: 'admin.settings.index',
+        match: ['admin.settings.*'],
         visible: hasRole('Admin'),
     },
 ]);
 
-const isActive = (item) => item.route && route().current(item.route);
+const isActive = (item) => {
+    if (!item.route) return false;
+
+    const patterns = item.match?.length ? item.match : [item.route];
+
+    return patterns.some((pattern) => route().current(pattern));
+};
 
 const logout = () => router.post(route('logout'));
 </script>
@@ -104,40 +172,24 @@ const logout = () => router.post(route('logout'));
 <template>
     <div class="flex h-full flex-col">
         <!-- Marca -->
-        <div class="flex items-center gap-2 px-4 pb-4 pt-5" :class="collapsed && !mobile ? 'justify-center' : 'justify-between'">
-            <Link :href="route('dashboard')" class="flex min-w-0 items-center gap-2" aria-label="WashApp · Panel">
+        <div
+            class="relative flex items-center justify-center pb-3 pt-6 transition-all duration-300"
+            :class="collapsed && !mobile ? 'px-2' : 'px-4'"
+        >
+            <Link :href="route('dashboard')" class="flex w-full items-center justify-center" aria-label="WashApp · Panel">
                 <img
-                    v-if="!collapsed || mobile"
                     src="/images/logo-washapp.png"
                     alt="WashApp"
-                    class="h-9 w-auto dark:brightness-0 dark:invert"
-                />
-                <img
-                    v-else
-                    src="/images/isologo.png"
-                    alt="WashApp"
-                    class="h-8 w-8 rounded-xl object-contain"
+                    class="w-auto object-contain transition-all duration-300 dark:brightness-0 dark:invert"
+                    :class="collapsed && !mobile ? 'h-8 max-w-[4rem]' : 'h-14 max-w-[11rem]'"
                 />
             </Link>
 
-            <!-- Colapsar (desktop) -->
-            <button
-                v-if="!mobile"
-                type="button"
-                class="grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-                :aria-label="collapsed ? 'Expandir menú' : 'Colapsar menú'"
-                @click="emit('toggle-collapse')"
-            >
-                <svg class="h-4 w-4 transition-transform duration-300" :class="{ 'rotate-180': collapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
-                </svg>
-            </button>
-
             <!-- Cerrar (móvil) -->
             <button
-                v-else
+                v-if="mobile"
                 type="button"
-                class="grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700"
+                class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-mist-100 hover:text-mist-700"
                 aria-label="Cerrar menú"
                 @click="emit('close')"
             >
@@ -190,22 +242,53 @@ const logout = () => router.post(route('logout'));
             </p>
         </div>
 
+        <!-- Plegar / desplegar -->
+        <div v-if="!mobile" class="border-t border-mist-200/70 px-3 py-2 dark:border-slate-800">
+            <button
+                type="button"
+                class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-xs font-semibold text-mist-400 transition hover:bg-mist-100 hover:text-mist-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                :class="collapsed ? 'justify-center px-0' : ''"
+                :aria-label="collapsed ? 'Expandir menú' : 'Contraer menú'"
+                :title="collapsed ? 'Expandir menú' : 'Contraer menú'"
+                @click="emit('toggle-collapse')"
+            >
+                <svg
+                    class="h-4 w-4 shrink-0 transition-transform duration-300"
+                    :class="{ 'rotate-180': collapsed }"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6" />
+                </svg>
+                <span v-if="!collapsed">Contraer menú</span>
+            </button>
+        </div>
+
         <!-- Usuario -->
         <div class="border-t border-mist-200/70 px-3 py-3 dark:border-slate-800">
-            <div class="flex items-center gap-3" :class="collapsed && !mobile ? 'justify-center' : ''">
-                <img
-                    :src="user?.avatar_url || user?.profile_photo_url"
-                    :alt="user?.name"
-                    class="h-9 w-9 flex-shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-slate-700"
-                />
-                <div v-if="!collapsed || mobile" class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-mist-800 dark:text-slate-100">{{ user?.name }}</p>
-                    <p class="truncate text-[11px] uppercase tracking-wider text-mist-400">{{ user?.role }}</p>
-                </div>
+            <div class="flex items-center gap-2" :class="collapsed && !mobile ? 'justify-center' : ''">
+                <Link
+                    :href="route(profileRoute)"
+                    class="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1 transition hover:bg-mist-100 dark:hover:bg-slate-800"
+                    :class="collapsed && !mobile ? 'justify-center' : ''"
+                    title="Ver mi perfil"
+                >
+                    <img
+                        :src="user?.avatar_url || user?.profile_photo_url"
+                        :alt="user?.name"
+                        class="h-9 w-9 flex-shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-slate-700"
+                    />
+                    <div v-if="!collapsed || mobile" class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-mist-800 dark:text-slate-100">{{ user?.name }}</p>
+                        <p class="truncate text-[11px] uppercase tracking-wider text-mist-400">{{ user?.role }}</p>
+                    </div>
+                </Link>
                 <button
                     v-if="!collapsed || mobile"
                     type="button"
-                    class="ml-auto grid h-8 w-8 place-items-center rounded-xl text-mist-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"
+                    class="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-mist-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"
                     aria-label="Cerrar sesión"
                     @click="logout"
                 >

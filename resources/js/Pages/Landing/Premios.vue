@@ -11,6 +11,9 @@ const nf = new Intl.NumberFormat('es-MX');
 
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user ?? null);
+const panelRoute = computed(() =>
+    currentUser.value?.role === 'Cliente' ? 'client.rewards.index' : 'dashboard'
+);
 
 const loyaltySteps = [
     {
@@ -59,7 +62,7 @@ const iconPaths = {
 
                     <div class="mt-7 flex flex-wrap justify-center gap-2">
                         <template v-if="currentUser">
-                            <Link :href="route('dashboard')" class="wa-btn-primary">Ver mis puntos</Link>
+                            <Link :href="route(panelRoute)" class="wa-btn-primary">Ver mis puntos</Link>
                             <Link :href="route('landing.agendar')" class="wa-btn-soft">Agendar servicio</Link>
                         </template>
                         <template v-else>
@@ -101,11 +104,11 @@ const iconPaths = {
                         </p>
                     </div>
 
-                    <div v-if="rewards.length" class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div v-if="rewards.length" class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                         <article
                             v-for="(reward, index) in rewards"
                             :key="reward.id"
-                            class="group flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/75 shadow-soft backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lift"
+                            class="group flex flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/75 shadow-soft backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:rounded-3xl"
                             data-reveal
                             :style="{ transitionDelay: `${index * 60}ms` }"
                         >
@@ -117,21 +120,27 @@ const iconPaths = {
                                     class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
                                 <span
-                                    class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-cloud-700 shadow-sm backdrop-blur"
+                                    class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-cloud-700 shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs"
                                 >
-                                    <i class="fa-solid fa-star text-sand-400"></i>
+                                    <i class="fa-solid fa-star text-[8px] text-sand-400 sm:text-[10px]"></i>
                                     {{ nf.format(reward.points_cost) }} pts
                                 </span>
                             </div>
 
-                            <div class="flex flex-1 flex-col p-5">
-                                <h3 class="text-base font-semibold text-mist-900">{{ reward.name }}</h3>
-                                <p class="mt-2 flex-1 text-sm leading-relaxed text-mist-500">{{ reward.description }}</p>
+                            <div class="flex flex-1 flex-col p-3 sm:p-5">
+                                <h3 class="text-sm font-semibold text-mist-900 sm:text-base">
+                                    <span class="line-clamp-2">{{ reward.name }}</span>
+                                </h3>
+                                <div class="mt-1.5 flex-1 sm:mt-2">
+                                    <p class="line-clamp-2 text-xs leading-relaxed text-mist-500 sm:text-sm">
+                                        {{ reward.description }}
+                                    </p>
+                                </div>
 
-                                <Link v-if="currentUser" :href="route('dashboard')" class="wa-btn-sage mt-5 w-full">
+                                <Link v-if="currentUser" :href="route(panelRoute)" class="wa-btn-sage mt-3 w-full !px-3 !py-2 text-xs sm:mt-5 sm:!px-4 sm:!py-2.5 sm:text-sm">
                                     Canjear
                                 </Link>
-                                <Link v-else :href="route('login')" class="wa-btn-sage mt-5 w-full">
+                                <Link v-else :href="route('login')" class="wa-btn-sage mt-3 w-full !px-3 !py-2 text-xs sm:mt-5 sm:!px-4 sm:!py-2.5 sm:text-sm">
                                     Ingresar para canjear
                                 </Link>
                             </div>

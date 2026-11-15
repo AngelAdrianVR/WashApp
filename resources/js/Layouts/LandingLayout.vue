@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Link, Head, usePage } from '@inertiajs/vue3';
+import { useScrollMotion } from '@/Composables/useScrollMotion';
 
 // --- Props ---
 const props = defineProps({
@@ -17,6 +18,8 @@ const description =
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user ?? null);
 const firstName = computed(() => currentUser.value?.name?.split(' ')[0] ?? '');
+const business = computed(() => page.props.business ?? {});
+const scheduleLabel = computed(() => business.value.schedule_label ?? 'Horario por confirmar');
 
 // --- Navigation Links ---
 const navigation = ref([
@@ -29,6 +32,9 @@ const navigation = ref([
 
 const isMobileMenuOpen = ref(false);
 const isScrolled = ref(false);
+const scrollProgress = ref(0);
+
+const { refresh: refreshMotion } = useScrollMotion();
 
 const toggleMobileMenu = () => {
     isMobileMenuOpen.value = !isMobileMenuOpen.value;
@@ -36,6 +42,9 @@ const toggleMobileMenu = () => {
 
 const handleScroll = () => {
     isScrolled.value = window.scrollY > 12;
+
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    scrollProgress.value = scrollable > 0 ? Math.min(100, Math.max(0, (window.scrollY / scrollable) * 100)) : 0;
 };
 
 let revealObserver = null;
@@ -76,6 +85,7 @@ onMounted(() => {
     handleScroll();
     nextTick(() => {
         observeReveals();
+        refreshMotion();
 
         mutationObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => mutation.addedNodes.forEach(observeNewNodes));
@@ -95,7 +105,10 @@ watch(
     () => page.url,
     () => {
         isMobileMenuOpen.value = false;
-        nextTick(observeReveals);
+        nextTick(() => {
+            observeReveals();
+            refreshMotion();
+        });
     }
 );
 </script>
@@ -121,6 +134,14 @@ watch(
     </Head>
 
     <div class="wa-page min-h-screen">
+        <!-- Progreso de lectura -->
+        <div class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]" aria-hidden="true">
+            <div
+                class="h-full rounded-r-full bg-gradient-to-r from-cloud-600 via-cloud-400 to-sage-500 transition-[width] duration-150 ease-out"
+                :style="{ width: `${scrollProgress}%` }"
+            ></div>
+        </div>
+
         <!-- =========== Header / Navigation =========== -->
         <header class="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
             <nav
@@ -311,8 +332,8 @@ watch(
                                 </Link>
                             </li>
                             <li>
-                                <Link :href="route('landing.index') + '#membresias'" class="transition hover:text-mist-900">
-                                    Membresías mensuales
+                                <Link :href="route('landing.promociones')" class="transition hover:text-mist-900">
+                                    Promociones vigentes
                                 </Link>
                             </li>
                         </ul>
@@ -348,7 +369,10 @@ watch(
                                     <i class="fa-regular fa-circle-question text-sand-400"></i> Reportar una incidencia
                                 </Link>
                             </li>
-                            <li class="text-xs text-mist-400">Lun a Sáb · 8:00 – 19:00 h</li>
+                            <li class="flex items-start gap-2 text-xs text-mist-400">
+                                <i class="fa-regular fa-clock mt-0.5 text-mist-300"></i>
+                                <span>{{ scheduleLabel }}</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -363,10 +387,12 @@ watch(
                             href="https://dtw.com.mx/"
                             target="_blank"
                             rel="noopener"
-                            class="flex items-center gap-1.5 rounded-lg bg-cloud-700 px-2 py-1 text-white transition hover:bg-cloud-800"
+                            class="flex items-center gap-3 rounded-2xl bg-cloud-700 px-4 py-2.5 text-white shadow-soft transition hover:bg-cloud-800"
                         >
-                            <span>BY</span>
-                            <img class="h-3 w-auto" src="/images/DTW_logo_blanco.png" alt="DTW" />
+                            <span class="text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-cloud-100/80">
+                                Desarrollado<br />por
+                            </span>
+                            <img class="h-8 w-auto sm:h-9" src="/images/DTW_logo_blanco.png" alt="DTW" />
                         </a>
                     </div>
                 </div>

@@ -14,6 +14,19 @@ const props = defineProps({
         type: Array,
         default: () => ['py-1', 'bg-white'],
     },
+    panelClasses: {
+        type: String,
+        default: 'rounded-md ring-1 ring-black ring-opacity-5',
+    },
+    wrapperClasses: {
+        type: String,
+        default: 'rounded-md shadow-lg',
+    },
+    // En móvil ancla el panel a los bordes de la pantalla en lugar del trigger.
+    fixedOnMobile: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 let open = ref(false);
@@ -29,20 +42,30 @@ onUnmounted(() => document.removeEventListener('keydown', closeOnEscape));
 
 const widthClass = computed(() => {
     return {
-        '48': 'w-48',
+        '48': props.fixedOnMobile ? 'sm:w-48' : 'w-48',
     }[props.width.toString()];
 });
 
+const positionClasses = computed(() =>
+    props.fixedOnMobile
+        ? 'fixed inset-x-4 top-[4.5rem] z-50 sm:absolute sm:inset-x-auto sm:top-auto sm:mt-2'
+        : 'absolute z-50 mt-2'
+);
+
 const alignmentClasses = computed(() => {
     if (props.align === 'left') {
-        return 'ltr:origin-top-left rtl:origin-top-right start-0';
+        return props.fixedOnMobile
+            ? 'sm:ltr:origin-top-left sm:rtl:origin-top-right sm:start-0'
+            : 'ltr:origin-top-left rtl:origin-top-right start-0';
     }
 
     if (props.align === 'right') {
-        return 'ltr:origin-top-right rtl:origin-top-left end-0';
+        return props.fixedOnMobile
+            ? 'sm:ltr:origin-top-right sm:rtl:origin-top-left sm:end-0'
+            : 'ltr:origin-top-right rtl:origin-top-left end-0';
     }
 
-    return 'origin-top';
+    return props.fixedOnMobile ? 'sm:origin-top' : 'origin-top';
 });
 </script>
 
@@ -65,12 +88,10 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                :class="[positionClasses, widthClass, alignmentClasses, wrapperClasses]"
                 style="display: none;"
-                @click="open = false"
             >
-                <div class="rounded-md ring-1 ring-black ring-opacity-5" :class="contentClasses">
+                <div :class="[panelClasses, contentClasses]">
                     <slot name="content" />
                 </div>
             </div>

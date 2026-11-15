@@ -14,6 +14,7 @@ const props = defineProps({
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const isClient = computed(() => user.value?.role === 'Cliente');
+const isEmployee = computed(() => user.value?.role === 'Empleado');
 
 // expanded | collapsed | hidden
 const sidebar = ref('expanded');
@@ -58,7 +59,12 @@ const contentPadding = computed(() => {
 
 const sidebarWidth = computed(() => (sidebar.value === 'collapsed' ? 'w-20' : 'w-64'));
 
-const profileRoute = computed(() => (isClient.value ? 'client.profile.show' : 'profile.show'));
+const profileRoute = computed(() => {
+    if (isClient.value) return 'client.profile.show';
+    if (isEmployee.value) return 'employee.profile.show';
+
+    return 'profile.show';
+});
 
 const logout = () => router.post(route('logout'));
 </script>
